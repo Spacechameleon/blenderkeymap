@@ -2640,9 +2640,12 @@
     const p = gifPlayers.get(stage);
     const btn = stage.querySelector('.gif-btn--play');
     if (!btn) return;
-    if (!p) { btn.hidden = true; stage.classList.remove('is-paused'); return; }
-    btn.hidden = false;
-    const paused = !!p.userPaused;
+    // Der Pause-Knopf verschwindet nur noch, wenn Anhalten grundsaetzlich
+    // unmoeglich ist: der Browser kennt den Decoder nicht, die Datei ist gar
+    // keine Animation, oder die Bilddaten sind ueber file:// unerreichbar.
+    // Ein voruebergehender Fehler nimmt ihn NICHT mehr weg.
+    btn.hidden = !HAS_IMAGE_DECODER || stage.dataset.gifDead === '1' || stage.dataset.gifNoData === '1';
+    const paused = !!(p && p.userPaused);
     btn.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
     btn.title = paused ? 'Abspielen' : 'Pause';
     btn.setAttribute('aria-label', btn.title);
@@ -2672,17 +2675,23 @@
   // Sperre laenger als drei Sekunden gesetzt, wird sie geloest.
   function startLoop(p) {
     cancelAnimationFrame(p.raf);
-    p.nextAt = performance.now() + p.dur;
+    p.running = true;
+    if (p.wantFrame == null) p.nextAt = performance.now() + p.dur;
     p.lastOk = performance.now();
-    p.errors = 0;
     const step = (now) => {
-      if (p.dead || !p.playing) return;
+      if (p.dead || !p.playing) { p.running = false; return; }
 
       if (p.busy && now - p.lastOk > 3000) { p.busy = false; p.lastOk = now; }
 
       if (!p.busy && now >= p.nextAt) {
         p.busy = true;
-        showFrame(p, (p.idx + 1) % p.count)
+        // Ein Wunschbild (vom Neustart gesetzt) hat Vorrang. Wichtig: dekodiert
+        // wird AUSSCHLIESSLICH hier. Frueher rief der Neustart selbst showFrame
+        // auf - lief dann gerade eine Dekodierung der Schleife, ueberschrieb
+        // deren spaeter eintreffendes Ergebnis das eben gesetzte Bild 0 wieder.
+        const ziel = (p.wantFrame == null) ? ((p.idx + 1) % p.count) : p.wantFrame;
+        p.wantFrame = null;
+        showFrame(p, ziel)
           .then(() => {
             // Naechster Wechsel wird an den vorherigen Takt angehaengt, nicht an
             // "jetzt" - sonst kaeme die Dekodierzeit bei jedem Bild oben drauf
@@ -2696,8 +2705,8 @@
           .catch(() => {
             p.lastOk = performance.now();
             p.errors++;
-            if (p.errors >= 3) destroyPlayer(p.stage);
-            else { p.idx = -1; p.nextAt = performance.now(); } // naechster Versuch bei Bild 1
+            if (p.errors >= 5) recoverPlayer(p);                    // neu aufbauen, nichts entfernen
+            else { p.wantFrame = 0; p.nextAt = performance.now(); } // sonst von vorn
           })
           .then(() => { p.busy = false; });
       }
@@ -2709,6 +2718,7 @@
   function playerPause(p, byUser) {
     if (byUser) p.userPaused = true;
     p.playing = false;
+    p.running = false;
     cancelAnimationFrame(p.raf);
   }
 
@@ -2719,11 +2729,48 @@
     startLoop(p);
   }
 
+  // Sicherheitsnetz: sollte eine Schleife aus irgendeinem Grund stehenbleiben,
+  // wird sie hier wieder angestossen. Ein gesundes GIF loest das nie aus, weil
+  // lastOk bei jedem gezeichneten Bild neu gesetzt wird. Lieber alle zwei
+  // Sekunden ein ueberfluessiger Blick als ein GIF, das stumm haengt.
+  setInterval(() => {
+    gifPlayers.forEach((p) => {
+      if (p.dead || p.userPaused || !p.playing) return;
+      if (performance.now() - p.lastOk > 2000) {
+        p.busy = false;
+        p.errors = 0;
+        startLoop(p);
+      }
+    });
+    // Sichtbare GIFs ohne Spieler noch einmal versuchen - so kommt die
+    // Steuerung nach einer voruebergehenden Stoerung von selbst zurueck.
+    if (!HAS_IMAGE_DECODER) return;
+    document.querySelectorAll('.viewport__stage .gif-controls').forEach((ctrl) => {
+      const stage = ctrl.parentNode;
+      if (gifPlayers.has(stage) || stage.dataset.gifTried || stage.dataset.gifDead || stage.dataset.gifNoData) return;
+      if (stage.offsetParent === null) return;
+      const r = stage.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > window.innerHeight + 200) return;
+      stage.dataset.gifTried = '1';
+      buildPlayer(stage).then(() => updatePlayBtn(stage)).catch((e) => markFailed(stage, e));
+    });
+  }, 2000);
+
+  // Der Neustart setzt nur noch einen Wunsch und weckt die Schleife. Dadurch
+  // kann er nichts mehr abbrechen und in keinem Fall in einem stehengebliebenen
+  // Zustand enden - frueher setzte ein fehlgeschlagener Direktaufruf p.dead und
+  // das GIF blieb stumm auf Bild 0 stehen (bei diesen Aufnahmen ein graues
+  // Blender-Fenster - genau das sichtbare Symptom).
   function playerRestart(p) {
     p.userPaused = false;
-    cancelAnimationFrame(p.raf);
+    p.playing = false;
+    p.dead = false;
+    p.errors = 0;
+    p.busy = false;
+    p.wantFrame = 0;
+    p.nextAt = performance.now();
     p.playing = true;
-    showFrame(p, 0).then(() => startLoop(p)).catch(() => { p.dead = true; });
+    startLoop(p);
   }
 
   async function buildPlayer(stage) {
@@ -2744,7 +2791,9 @@
     const track = dec.tracks.selectedTrack;
     if (!track || !track.animated || track.frameCount < 2) throw new Error('nicht animiert');
 
-    const canvas = document.createElement('canvas');
+    // Vorhandenes Canvas und vorhandene Leiste weiterbenutzen, falls dies ein
+    // Wiederaufbau ist - so verschwindet fuer den Betrachter nie etwas.
+    const canvas = stage.querySelector('canvas') || document.createElement('canvas');
     canvas.className = img.className; // erbt contain / zoom-crop / crop-right
     const p = {
       stage, img, canvas, ctx: canvas.getContext('2d'), dec,
@@ -2757,12 +2806,15 @@
     img.dataset.gifSrc = src;
     img.removeAttribute('src'); // Browser-Animation anhalten - ab jetzt zeichnen wir
     img.style.display = 'none';
-    stage.insertBefore(canvas, stage.firstChild);
+    if (!canvas.parentNode) stage.insertBefore(canvas, stage.firstChild);
 
-    const bar = document.createElement('div');
-    bar.className = 'gif-progress';
-    bar.innerHTML = '<div class="gif-progress__track"><div class="gif-progress__fill"></div></div>';
-    stage.appendChild(bar);
+    let bar = stage.querySelector('.gif-progress');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'gif-progress';
+      bar.innerHTML = '<div class="gif-progress__track"><div class="gif-progress__fill"></div></div>';
+      stage.appendChild(bar);
+    }
     p.bar = bar;
     p.fill = bar.querySelector('.gif-progress__fill');
 
@@ -2778,9 +2830,42 @@
   // Pause-Knopf, obwohl der naechste Versuch geklappt haette.
   function markFailed(stage, err) {
     gifPlayers.delete(stage);
-    if (err && err.message === 'nicht animiert') stage.dataset.gifDead = '1';
-    else delete stage.dataset.gifTried;
+    if (err && err.message === 'nicht animiert') {
+      stage.dataset.gifDead = '1';                 // echte Einzelbild-Datei
+    } else if (location.protocol === 'file:') {
+      stage.dataset.gifNoData = '1';               // per Doppelklick nie erreichbar
+    } else {
+      delete stage.dataset.gifTried;               // spaeter nochmal versuchen
+    }
     updatePlayBtn(stage);
+  }
+
+  // Erholung nach wiederholten Fehlern: der Decoder wird verworfen und frisch
+  // aufgebaut, waehrend Canvas, Leiste und Knoepfe stehenbleiben. Fuer den
+  // Betrachter verschwindet dabei nichts - genau das ist der Unterschied zu
+  // destroyPlayer(), das nur noch beim Verlassen einer Seite benutzt wird.
+  function recoverPlayer(p) {
+    const stage = p.stage;
+    p.dead = true;
+    p.running = false;
+    cancelAnimationFrame(p.raf);
+    try { p.dec.close(); } catch (e) {}
+    gifPlayers.delete(stage);
+    delete stage.dataset.gifTried;
+    buildPlayer(stage)
+      .then(() => updatePlayBtn(stage))
+      .catch((e) => {
+        // Auch der Wiederaufbau ging schief. Dann zeigen wir wieder das normale
+        // <img> (das laeuft und wiederholt sich von selbst), lassen Leiste und
+        // Knoepfe aber stehen - es soll dem Betrachter nichts wegbrechen. Das
+        // Sicherheitsnetz versucht es spaeter erneut.
+        const c = stage.querySelector('canvas');
+        if (c) c.remove();
+        const im = stage.querySelector('img');
+        if (im) { im.style.display = ''; if (im.dataset.gifSrc) im.setAttribute('src', im.dataset.gifSrc); }
+        markFailed(stage, e);
+        console.warn('[GIF] Abspieler konnte nicht aufgebaut werden:', e && (e.name + ': ' + e.message));
+      });
   }
 
   function destroyPlayer(stage) {
@@ -2845,9 +2930,19 @@
 
     const play = mk('gif-btn--play', ICON_PAUSE, 'Pause', () => {
       const p = gifPlayers.get(stage);
-      if (!p) return;
-      if (p.userPaused) playerPlay(p, true); else playerPause(p, true);
-      updatePlayBtn(stage);
+      if (p) {
+        if (p.userPaused) playerPlay(p, true); else playerPause(p, true);
+        updatePlayBtn(stage);
+        return;
+      }
+      // Kein Spieler vorhanden: einen aufbauen und direkt anhalten, damit der
+      // Knopf auch nach einer Stoerung wieder tut, was er verspricht.
+      if (HAS_IMAGE_DECODER && !stage.dataset.gifDead) {
+        delete stage.dataset.gifTried;
+        buildPlayer(stage)
+          .then((np) => { playerPause(np, true); updatePlayBtn(stage); })
+          .catch((e) => markFailed(stage, e));
+      }
     });
     play.hidden = true; // erscheint erst, wenn der Decoder wirklich laeuft
     wrap.appendChild(play);
