@@ -1,0 +1,3671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blender Workflow — Transform / Edit / Modifier</title>
+<!-- Schriften liegen lokal unter assets/fonts/ — kein Google-Fonts-CDN mehr,
+     die Seite laedt damit auch ohne Internetverbindung vollstaendig. -->
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+  :root{
+    --bg: #0b0b0d;
+    --surface: #151517;
+    --surface-alt: #1c1c1f;
+    --line: #2c2c30;
+    --text: #f2f2f3;
+    --muted: #8c8c92;
+    --accent: #ec1279;
+    --accent-dim: #7d1146;
+
+    /* Spacing-Skala */
+    --space-xs: 8px;
+    --space-sm: 16px;
+    --space-md: 24px;
+    --space-lg: 32px;
+    --space-xl: 48px;
+    --space-2xl: 64px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html{scrollbar-gutter:stable;}
+
+  body{
+    background:
+      radial-gradient(ellipse 1100px 650px at center 20%, rgba(235,125,13,0.06), transparent 70%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Navigation: Sidebar (aus preview_menu_sidebar_v38) ---------- */
+  /* ---------- Sprachumschalter ---------- */
+  .lang-switch-group{
+    position:relative;
+    justify-self:end;
+    display:inline-flex;
+  }
+
+  .lang-switch{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    appearance:none;
+    border:none;
+    background:none;
+    padding:4px 2px;
+    cursor:pointer;
+    color:var(--muted);
+    transition:color .15s ease;
+  }
+
+  .lang-switch-group:hover .lang-switch,
+  .lang-switch-group.expanded .lang-switch{
+    color:var(--text);
+  }
+
+  .lang-switch__icon{
+    display:flex;
+    line-height:0;
+  }
+
+  .lang-switch__icon img{
+    width:16px;
+    height:16px;
+    filter:invert(1);
+    opacity:0.55;
+    transition:opacity .15s ease;
+  }
+
+  .lang-switch-group:hover .lang-switch__icon img,
+  .lang-switch-group.expanded .lang-switch__icon img{
+    opacity:1;
+  }
+
+  .lang-switch__label{
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    transition:opacity .08s linear;
+  }
+
+  .lang-switch__arrow{
+    width:0;
+    height:0;
+    border-left:4px solid transparent;
+    border-right:4px solid transparent;
+    border-top:5px solid var(--muted);
+    opacity:0.45;
+    margin-top:2px;
+    transition:opacity .15s ease;
+  }
+
+  .lang-switch-group:hover .lang-switch__arrow,
+  .lang-switch-group.expanded .lang-switch__arrow{
+    opacity:1;
+  }
+
+  .lang-switch-group:hover .lang-switch__arrow,
+  .lang-switch-group.expanded .lang-switch__arrow{
+    border-top:none;
+    border-bottom:5px solid var(--muted);
+    margin-top:-3px;
+  }
+
+  .lang-flyout{
+    position:absolute;
+    top:100%;
+    right:0;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:2px;
+    padding:20px 8px 12px;
+    background:radial-gradient(ellipse 100% 100% at 80% 0%, rgba(20,20,22,0.88) 0%, rgba(20,20,22,0.58) 45%, rgba(20,20,22,0) 80%);
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(-4px);
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:50;
+  }
+
+  .lang-switch-group:hover .lang-flyout,
+  .lang-switch-group.expanded .lang-flyout,
+  .lang-switch-group:focus-within .lang-flyout{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateY(0);
+  }
+
+  .lang-option{
+    appearance:none;
+    border:none;
+    background:none;
+    color:var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:5px 10px 7px;
+    cursor:pointer;
+    text-align:center;
+    white-space:nowrap;
+    border-bottom:2px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+  }
+
+  .lang-option:hover{
+    color:var(--text);
+  }
+
+  .lang-option.active{
+    color:var(--accent);
+    border-bottom-color:var(--accent);
+  }
+
+  /* ---------- Nav-Test: Seitenleiste (Sidebar-Variante, ein-/ausklappbar) ---------- */
+  /* Inhalt wird dauerhaft um die Breite der eingeklappten Rail nach rechts
+     gerückt, damit nie etwas unter der Leiste verschwindet. Beim Auf-/Zuklappen
+     verschiebt sich der Inhalt NICHT (die ausgeklappte Sidebar legt sich als
+     Overlay darüber) — kein Reflow des gesamten Seiteninhalts pro Klick. */
+  body.layout-sidebar{
+    padding-left:56px;
+  }
+
+  .sidebar{
+    position:fixed;
+    top:0; left:0; bottom:0;
+    width:232px;
+    background:var(--surface);
+    border-right:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    padding:56px 18px 24px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    scroll-snap-type:y mandatory;
+    z-index:220;
+    transition:width .32s cubic-bezier(.4,0,.2,1), transform .32s cubic-bezier(.4,0,.2,1), padding .32s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ---------- Ein-/Ausklapp-Pfeil (Kreis-Chevron) ---------- */
+  .toggle-arrow-icon{
+    display:block;
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+  }
+
+  .toggle-arrow-icon circle{
+    fill:#1c1c1e;
+    stroke:var(--line);
+    stroke-width:1;
+  }
+
+  .toggle-arrow-icon path{
+    stroke:#d7d7d7;
+  }
+
+  /* Desktop: Pfeil sitzt auf der rechten Sidebar-Kante ("vertikale Menülinie").
+     Höhe/Skalierung 1:1 aus Zustand C von v6 übernommen (top:14px, 26px-Icon).
+     Der Button selbst bewegt sich beim Klick nicht mehr — nur das Icon dreht sich
+     exakt 180°; die einzige Positionsänderung ist die passive Folge der
+     Sidebar-Breitenänderung (right:0 folgt automatisch der Kante mit). */
+  .sidebar-toggle-desktop{
+    position:absolute;
+    top:23px;
+    right:6px;
+    transform:translateY(-50%);
+    z-index:500;
+    width:30px; height:30px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:none;
+    border:none;
+    padding:0;
+    line-height:0;
+    cursor:pointer;
+    /* Bleibt IMMER (Zustand A, Zustand B, während des Ziehens, während der
+       Klick-Animation — ausnahmslos) am rechten Rand mit festem 6px-Abstand.
+       Kein Sonderfall/keine Regel mehr, die ihn irgendwann zur Mitte springen
+       lässt — right:6px ist eine reine CSS-Formel relativ zum aktuellen
+       rechten Rand und verfolgt Breitenänderungen dadurch automatisch und
+       flüssig, egal ob per Ziehen oder per Klick-Animation ausgelöst. */
+  }
+
+  .sidebar-toggle-desktop .toggle-arrow-icon{
+    width:26px;
+    height:26px;
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Keine statische rotate(180deg)-Regel mehr für den eingeklappten Zustand —
+     die Rotation wird jetzt IMMER explizit per JS gesetzt (auch im Ruhezustand,
+     nicht nur während der Animation). Eine zusätzliche CSS-Regel würde beim
+     Hinzufügen der Klasse eine zweite, konkurrierende Übergangsanimation
+     auslösen und den Pfeil sichtbar zurückschnappen lassen (nur beim Einklappen
+     bemerkbar, da es für den ausgeklappten Zustand keine Gegen-Regel gab). */
+
+  /* Draggbarer Griff entlang der ganzen Menülinie, um zwischen den beiden
+     Zuständen per Drag-and-Drop hin- und herzuziehen — auf allen Breiten gleich,
+     es gibt keinen separaten Mobil-Zustand mehr */
+  .sidebar-resize-handle{
+    position:absolute;
+    top:0; right:0;
+    width:10px; height:100%;
+    cursor:ew-resize;
+    touch-action:none;
+    z-index:5;
+    /* Sitzt jetzt komplett INNERHALB der Sidebar-Box (statt zur Hälfte über den
+       Rand hinauszuragen) — die Sidebar hat overflow-x:hidden, wodurch die
+       herausragende Hälfte bisher unsichtbar UND unklickbar war. Dadurch trafen
+       Klicks/Drags in diesem Bereich ins Leere, was sich wie ein "Hängenbleiben"
+       anfühlte, obwohl das eigentliche Rotations-/Positions-Tracking längst
+       korrekt funktionierte. */
+  }
+
+  /* ---------- Desktop: Rail-Zustand (eingeklappt) ---------- */
+  body.sidebar-collapsed .sidebar{
+    width:56px;
+  }
+
+  /* Nav bleibt sichtbar — nur die Beschriftung verschwindet, die Icons bleiben
+     und rutschen zentriert an dieselbe horizontale Stelle wie das Sprach-Icon.
+     Unterpunkte verhalten sich jetzt genauso: ihr Punkt-Icon bleibt sichtbar und
+     zentriert sich ebenfalls, nur Text und graue Trennlinie verschwinden — die
+     Position der Trennlinie selbst (Sublist-Einzug) ändert sich dabei NICHT,
+     nur ihre Farbe wird transparent. */
+  body.sidebar-collapsed .sidebar__item-label{
+    display:none;
+  }
+
+  /* Während des Ziehens an der Trennerlinie: Menütexte faden über die
+     Zieh-Fortschritts-Variable --drag-fade (richtungsabhängig: schon bei 66%
+     voll sichtbar bzw. voll unsichtbar). Die aktive Pink-Markierung (Linie +
+     Hintergrund) bleibt dabei immer voll sichtbar, und alle Icons (auch die
+     der Unterpunkte) bleiben stehen. display:inline hebt das display:none der
+     Endzustände während des Ziehens auf, damit die Opacity-Animation
+     überhaupt sichtbar wird. */
+  .sidebar__item-label{
+    transition:opacity .08s linear;
+  }
+
+  .sidebar.is-dragging .sidebar__item-label{
+    display:inline;
+    opacity:var(--drag-fade, 1);
+  }
+
+  /* EN/DE-Button bleibt im Rail-Zustand immer sichtbar. Er bewegt und zentriert
+     sich NICHT — Icon behält immer exakt die Position aus Zustand A, nur der
+     Text verschwindet (ebenfalls mit Fade während des Ziehens). */
+  body.sidebar-collapsed .lang-switch__label{
+    display:none;
+  }
+
+  .sidebar.is-dragging .lang-switch__label{
+    display:inline;
+    opacity:var(--drag-fade, 1);
+  }
+
+  .sidebar__nav{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    flex:1;
+  }
+
+  .sidebar__item{
+    position:relative;
+    appearance:none;
+    border:none;
+    background:none;
+    text-align:left;
+    color:var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:0.01em;
+    padding:9px 10px 9px 0;
+    /* Zeilenhöhe ist an die Icon-Größe gekoppelt (16.8px Icon + 2×9px Padding),
+       NICHT an den Text — sonst schrumpft die Zeile, sobald der Text beim
+       Einklappen verschwindet (bei Unterpunkten war der Text zuvor höher als
+       ihr kleines 8px-Punkt-Icon, wodurch die Zeile beim Ausblenden des Texts
+       sichtbar in sich zusammenfiel und alles darunter nach oben "sprang") */
+    min-height:34.8px;
+    border-radius:0 6px 6px 0;
+    cursor:pointer;
+    scroll-snap-align:start;
+    white-space:nowrap;
+    /* Icon-Zone: 20px breite Spalte OHNE eigenes Padding, das Icon wird darin
+       zentriert (nicht linksbündig) — 20px entspricht der Innenbreite der
+       eingeklappten Rail (56px Sidebar − 2×18px Padding), dadurch landet das
+       Icon in Zustand A exakt an derselben Stelle wie in Zustand B, und diese
+       Stelle ist die Mitte der Icon-Zone statt ihr linker Rand. Reihenfolge im
+       Markup: Icon zuerst, dann Label. */
+    display:grid;
+    grid-template-columns:20px 1fr;
+    align-items:center;
+    column-gap:8px;
+    width:100%;
+    box-sizing:border-box;
+    transition:color .15s ease, background .15s ease;
+  }
+
+  .sidebar__item:hover{
+    color:var(--text);
+  }
+
+  .sidebar__item:hover::after{
+    background:rgba(255,255,255,0.04);
+  }
+
+  /* Aktive Pink-Linie: eigenes Pseudo-Element, das bis zum ECHTEN Sidebar-Rand
+     reicht (bleedet 18px in das Sidebar-Padding hinein), statt nur am inneren
+     Rand des Items zu beginnen. Die rosa Hintergrundfläche (::after) sitzt
+     dagegen mit gleichmäßigem Abstand (8px) von BEIDEN echten Sidebar-Rändern
+     — vorher war sie links bündig (18px) und rechts weiter innen (28px). */
+  .sidebar__item::before{
+    content:'';
+    position:absolute;
+    left:-6px;
+    top:0; bottom:0;
+    width:2px;
+    background:transparent;
+    transition:background .15s ease;
+  }
+
+  .sidebar__item.active::before{
+    background:var(--accent);
+  }
+
+  .sidebar__item::after{
+    content:'';
+    position:absolute;
+    left:-6px;
+    right:-8px;
+    top:0; bottom:0;
+    background:transparent;
+    border-radius:0 6px 6px 0;
+    transition:background .15s ease;
+    z-index:-1;
+    pointer-events:none;
+  }
+
+  .sidebar__item.active::after{
+    background:rgba(236,18,121,0.07);
+  }
+
+  .sidebar__item.active{
+    color:var(--accent);
+  }
+
+  .sidebar__item-label{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    min-width:0;
+  }
+
+  .sidebar__item-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:inherit;
+  }
+
+  .sidebar__item-icon svg{
+    display:block;
+    width:16.8px;
+    height:16.8px;
+  }
+
+  .sidebar__item-icon--sub svg{
+    width:8px;
+    height:8px;
+    opacity:0.7;
+  }
+
+  .sidebar__group{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .sidebar__sublist{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    margin:2px 0;
+  }
+
+  /* Linie sitzt jetzt direkt am jeweiligen Item, nicht mehr an der ganzen Unterliste —
+     dadurch wird nur die eine aktive Zeile pink, der Rest bleibt grau */
+  .sidebar__sublist .sidebar__item{
+    font-size:12.5px;
+    font-weight:400;
+    padding:9px 10px 9px 0;
+  }
+
+  /* Nur der Text der Unterpunkte ist eingerückt (zeigt die Hierarchie),
+     das Icon bleibt unverändert in der fixen, mit allen anderen Icons
+     (inkl. Sprach-Icon) ausgerichteten Spalte stehen */
+  .sidebar__sublist .sidebar__item-label{
+    margin-left:18px;
+  }
+
+  .sidebar__divider{
+    height:1px;
+    background:var(--line);
+    margin:var(--space-sm) -10px;
+    flex-shrink:0;
+  }
+
+  /* Sprachumschalter unten in der Sidebar, Flyout öffnet nach oben */
+  .sidebar .lang-switch-group{
+    justify-self:auto;
+    width:100%;
+  }
+
+  .sidebar .lang-switch{
+    width:100%;
+    padding:8px 10px 8px 0;
+    border-radius:6px;
+    display:grid;
+    grid-template-columns:20px 1fr;
+    column-gap:8px;
+    align-items:center;
+    box-sizing:border-box;
+    text-align:left;
+  }
+
+  .sidebar .lang-switch__icon{
+    justify-self:center;
+  }
+
+  .sidebar .lang-switch:hover,
+  .sidebar .lang-switch-group.expanded .lang-switch{
+    background:rgba(255,255,255,0.04);
+  }
+
+  .sidebar .lang-flyout{
+    top:auto;
+    bottom:100%;
+    left:0;
+    right:0;
+    background:radial-gradient(ellipse 100% 100% at 50% 100%, rgba(20,20,22,0.88) 0%, rgba(20,20,22,0.58) 45%, rgba(20,20,22,0) 80%);
+    transform:translateY(4px);
+    padding:10px 8px 18px;
+  }
+
+  .sidebar .lang-switch-group:hover .lang-flyout,
+  .sidebar .lang-switch-group.expanded .lang-flyout{
+    transform:translateY(0);
+  }
+
+  /* ---------- Mobil: dritter Zustand — Sidebar komplett weg, nur kleiner Pfeil sichtbar ---------- */
+  .sidebar-toggle-mini{
+    display:none;
+    position:fixed;
+    top:23px; left:14px;
+    transform:translateY(-50%);
+    z-index:500;
+    width:30px; height:30px;
+    align-items:center;
+    justify-content:center;
+    background:none;
+    border:none;
+    padding:0;
+    line-height:0;
+    cursor:pointer;
+  }
+
+  .sidebar-toggle-mini .toggle-arrow-icon{
+    width:26px;
+    height:26px;
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Ebenfalls keine statische rotate(180deg)-Regel mehr — siehe Begründung oben
+     bei .sidebar-toggle-desktop */
+
+  .sidebar-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+    z-index:210;
+  }
+
+  body.sidebar-mobile-open .sidebar-backdrop{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  /* EIN einziger Breakpoint (640px) fuer alles — Sidebar-Zustand C und die
+     Schriftgroessen-/Abstands-Regeln schalten damit exakt an derselben Stelle um.
+     Zuvor hing die Sidebar an (hover:none + pointer:coarse), die Typografie aber
+     nur an der Fensterbreite: beim Zusammenschieben eines Desktop-Fensters
+     aenderten sich dadurch die Schriftgroessen, ohne dass das Menue mitzog. */
+  @media (min-width:641px){
+    .sidebar-backdrop{display:none;}
+  }
+
+  @media (max-width:640px){
+    .sidebar-toggle-mini{display:flex;}
+
+    /* Mobil liegt die Sidebar komplett off-canvas — kein Platzhalter noetig */
+    body.layout-sidebar{padding-left:0;}
+    .sidebar-toggle-desktop{display:none;}
+
+
+    .sidebar{
+      width:232px !important;
+      padding:24px 18px !important;
+      transform:translateX(-100%);
+      box-shadow:0 0 48px rgba(0,0,0,0.45);
+    }
+
+    body.sidebar-mobile-open .sidebar{
+      transform:translateX(0);
+    }
+
+    /* Geöffnet zeigt Mobil immer den vollen Inhalt, unabhängig vom Desktop-Rail-Status */
+    .lang-switch__label{
+      display:inline !important;
+    }
+    .sidebar__nav{
+      visibility:visible !important;
+      pointer-events:auto !important;
+    }
+  }
+
+  /* ---------- Menü D: horizontale Menüleiste über dem Content, scrollt normal mit,
+     liegt UNTER der Sidebar (die sich in jedem Zustand darüber legt) ---------- */
+  .menu-d{
+    position:fixed;
+    top:0; left:0; right:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding:12px 24px;
+    background:var(--surface);
+    z-index:100;
+  }
+
+  .menu-d__brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .menu-d__brand .dot{
+    width:5px; height:5px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 5px var(--accent);
+    flex-shrink:0;
+    opacity:0.85;
+  }
+
+  .menu-d__title{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:12px;
+    font-weight:400;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .menu-d__title b{
+    font-weight:500;
+    color:var(--text);
+  }
+
+  .menu-d__title span{
+    color:var(--muted);
+    font-weight:400;
+    margin-left:6px;
+  }
+
+  /* Kopfzeile auf dem Handy zurueckhaltender: kleinerer Titel, engere Leiste.
+     Dieser Block MUSS hinter den .menu-d-Basisregeln stehen — die Sidebar-
+     Mobil-Query weiter oben kommt im Stylesheet vor ihnen und wuerde bei
+     gleicher Spezifitaet ueberschrieben. */
+  @media (max-width:640px){
+    .menu-d{padding:9px 14px;}
+    .menu-d__title{font-size:10px; letter-spacing:0.05em;}
+    .menu-d__title span{margin-left:4px;}
+    .menu-d__brand{gap:6px;}
+    .menu-d__brand .dot{width:4px; height:4px;}
+  }
+
+  kbd{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    background:var(--surface-alt);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:2px 5px;
+    color:var(--text);
+  }
+
+  /* ---------- Pages ---------- */
+  .page{
+    display:none;
+    padding:130px 8vw 100px;
+    max-width:1100px;
+    margin:0 auto;
+    min-height:100vh;
+  }
+
+  .page.active{display:block;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--accent);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--accent);
+  }
+
+  h1.title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(2.6rem, 5vw, 4.2rem);
+    line-height:1.02;
+    letter-spacing:-0.01em;
+    margin-bottom:14px;
+  }
+
+  .subtitle{
+    color:var(--muted);
+    font-size:16px;
+    max-width:520px;
+    margin-bottom:24px;
+    line-height:1.6;
+  }
+
+  .callout{
+    max-width:560px;
+    margin-top:var(--space-sm);
+    margin-bottom:40px;
+    padding-left:14px;
+    border-left:2px solid var(--line);
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.55;
+  }
+
+  .inline-link{
+    color:var(--accent);
+    text-decoration:none;
+  }
+
+  .inline-link:hover{
+    color:var(--text);
+  }
+
+  .callout b{
+    color:var(--text);
+    font-weight:600;
+  }
+
+  /* ---------- Step: one heading + one viewport. Repeat this block for every new GIF/Bild. ---------- */
+  .step{
+    margin-bottom:0;
+    scroll-margin-top:110px;
+    padding:var(--space-lg);
+    margin-left:calc(var(--space-lg) * -1);
+    margin-right:calc(var(--space-lg) * -1);
+  }
+
+  .step.no-bottom-pad{
+    padding-bottom:0;
+  }
+
+  .stripe-odd{
+    background:rgba(255,255,255,0.015);
+  }
+
+  .stripe-even{
+    background:rgba(0,0,0,0.15);
+  }
+
+  .substep{
+    scroll-margin-top:110px;
+    padding:var(--space-lg);
+    margin-left:calc(var(--space-lg) * -1);
+    margin-right:calc(var(--space-lg) * -1);
+    margin-top:0;
+    margin-bottom:0;
+  }
+
+  .step:last-child{
+    margin-bottom:0;
+  }
+
+  .step__label{
+    display:inline-block;
+    font-family:'Inter', sans-serif;
+    font-weight:400;
+    font-size:16px;
+    letter-spacing:0.01em;
+    color:#d0d0d3;
+    padding:0;
+    border:none;
+    margin-top:var(--space-lg);
+    margin-bottom:var(--space-xs);
+  }
+
+  h2.step__title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:400;
+    font-size:1.5rem;
+    margin-bottom:6px;
+  }
+
+  .step__title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:var(--space-lg);
+    margin-bottom:6px;
+  }
+
+  .step__title-row .step__label{
+    margin-top:0;
+  }
+
+  /* ---------- Sub-Tabs (Auswahl hinzufügen / abziehen) ---------- */
+  .subtab-buttons{
+    display:inline-flex;
+    gap:0;
+    margin-top:var(--space-lg);
+    margin-bottom:0;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:16px 16px 0 0;
+    overflow:hidden;
+    position:relative;
+    z-index:2;
+  }
+
+  .substep > .subtab-buttons:first-child{
+    margin-top:0;
+  }
+
+  .substep > .step__label:first-child,
+  .substep > .step__title-row:first-child{
+    margin-top:0;
+  }
+
+  .subtab-btn{
+    appearance:none;
+    border:none;
+    background:rgba(0,0,0,0.2);
+    color:var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:11px 22px;
+    cursor:pointer;
+    transition:color .15s ease, background .15s ease;
+  }
+
+  .subtab-btn:not(:last-child){
+    border-right:1px solid var(--line);
+  }
+
+  .subtab-btn:hover{
+    color:var(--text);
+  }
+
+  .subtab-btn.active{
+    color:var(--text);
+    background:none;
+  }
+
+  .subtab-panel > .hotkey-list:first-child{
+    margin-top:0;
+    border-top-left-radius:0;
+  }
+
+  .step__title-row h2.step__title{
+    margin-bottom:0;
+  }
+
+  /* ---------- Section-Divider (Fade-Linie + Kapitelnummer) ---------- */
+  .step-divider{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:28px;
+    scroll-margin-top:56px;
+  }
+
+  .step-divider__num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--accent);
+    border:1px solid var(--accent-dim);
+    border-radius:4px;
+    padding:2px 6px;
+    flex-shrink:0;
+  }
+
+  .step-divider__line{
+    height:1px;
+    flex:1;
+    background:linear-gradient(90deg, var(--line), transparent);
+  }
+
+  /* ---------- Sub-Marker (Buchstabe + Linie) für Substeps, analog zu Step-Divider ---------- */
+  .substep-marker{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:var(--space-sm);
+    scroll-margin-top:56px;
+  }
+
+  .substep-marker__dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--line);
+    flex-shrink:0;
+  }
+
+  .substep-marker__line{
+    height:1px;
+    flex:1;
+    background:linear-gradient(90deg, var(--line), transparent);
+  }
+
+  .substep-marker + .step__label,
+  .substep-marker + .step__title-row{
+    margin-top:0;
+  }
+
+  .substep-divider{
+    height:1px;
+    max-width:520px;
+    margin:0;
+    background:linear-gradient(90deg, var(--line), transparent);
+  }
+
+  .step__desc{
+    color:var(--muted);
+    font-size:14px;
+    max-width:560px;
+    margin-bottom:0;
+    line-height:1.55;
+  }
+
+  /* Wenn direkt ein Substep mit eigener Farbtrennung folgt, den Übergang mittig legen */
+  .step__desc.has-color-split{
+    padding-bottom:var(--space-md);
+  }
+
+  .substep.color-split-start{
+    padding-top:var(--space-md);
+  }
+
+  /* ---------- Signature element: fake viewport chrome around the GIF ---------- */
+  .viewport{
+    position:relative;
+    background:#0f0f0f;
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
+  }
+
+  /* Wenn kein Button-Block dazwischen sitzt, braucht das GIF selbst Abstand zum Text */
+  .step__desc + .viewport{
+    margin-top:var(--space-lg);
+  }
+
+  .viewport + .viewport{
+    margin-top:var(--space-xl);
+  }
+
+  /* Folgt einem GIF/Bild direkt Text, sitzt dazwischen immer --space-lg (32px).
+     Wie ueberall kommt der Abstand vom Folge-Element, nicht vom Viewport. */
+  .viewport + .step__desc,
+  .viewport + .callout,
+  .viewport + p,
+  .ref-figure + .step__desc,
+  .ref-figure + .callout,
+  .ref-figure + p{
+    margin-top:var(--space-lg);
+  }
+
+  .step__desc + .step__desc{
+    margin-top:var(--space-md);
+  }
+
+  .viewport__chrome{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background:var(--surface);
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .viewport__chrome .dots{display:flex; gap:6px;}
+  .viewport__chrome .dots span{width:9px; height:9px; border-radius:50%; background:#3a3a3a;}
+
+  .viewport__stage{
+    position:relative;
+    aspect-ratio: 16 / 10;
+    overflow:hidden;
+    background:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/40px 40px,
+      #171717;
+  }
+
+  /* Bei nicht zugeschnittenen (contain) GIFs wird das Karo-Raster sichtbar — dort stattdessen einfarbig */
+  .viewport__stage:has(> img.contain){
+    background:#171717;
+  }
+
+  /* Höhere Variante für Loop-Selection-GIFs, damit unten nicht so viel abgeschnitten wird */
+  .viewport__stage--tall{
+    aspect-ratio: 16 / 14;
+  }
+
+  /* Stärker heranzoomen, um überschüssigen Leerraum (Gitter) an den Rändern wegzuschneiden */
+  .viewport__stage img.zoom-crop{
+    transform: scale(1.35);
+    transform-origin: center 30%;
+  }
+
+  /* Rechten Rand um ca. 10px kappen (z. B. Origin-GIFs) */
+  .viewport__stage img.crop-right{
+    clip-path: inset(0 10px 0 0);
+  }
+
+  /* Einheitliche Größe für alle GIFs/Bilder: erst füllend skalieren (object-fit:cover),
+     dann wird nur der untere Überstand automatisch beschnitten statt das Bild zu verzerren. */
+  .viewport__stage img{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:top;
+  }
+
+  /* Für Fälle, in denen nichts abgeschnitten werden soll: nur herunterskalieren, Höhe bleibt einheitlich */
+  .viewport__stage img.contain{
+    object-fit:contain;
+    object-position:center;
+  }
+
+  /* Zentriert zuschneiden (oben und unten) statt nur unten */
+  .viewport__stage img.crop-center{
+    object-position:center;
+  }
+
+  .viewport__readout{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--accent-dim);
+    background:var(--surface);
+    border-top:1px solid var(--line);
+  }
+
+  .viewport__readout b{color:var(--accent); font-weight:500;}
+
+  /* ---------- Steuerung fuer GIFs: von vorn abspielen / Pause ---------- */
+  /* Fortschrittsleiste: reine Anzeige, an welcher Stelle eines GIFs man gerade
+     ist. Bei Aufnahmen von ueber einer Minute Laenge ist das der Unterschied
+     zwischen "haengt das?" und "ich bin am Anfang". Bewusst nicht anklickbar -
+     pointer-events:none laesst Klicks und Wischgesten durch zum Bild darunter. */
+  .gif-progress{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    display:flex;
+    align-items:flex-end;
+    pointer-events:none;
+    z-index:3;
+    opacity:0.6;
+    transition:opacity .15s ease;
+  }
+
+  .viewport:hover .gif-progress{
+    opacity:1;
+  }
+
+  @media (hover:none){
+    .gif-progress{opacity:0.9;}
+  }
+
+  .gif-progress__track{
+    width:100%;
+    height:4px;
+    background:rgba(255,255,255,0.16);
+  }
+
+  .gif-progress__fill{
+    height:100%;
+    width:0;
+    background:rgba(255,255,255,0.5);
+  }
+
+  .gif-controls{
+    position:absolute;
+    right:10px;
+    bottom:22px;
+    display:flex;
+    gap:5px;
+    z-index:3;
+    opacity:0.5;
+    transition:opacity .15s ease;
+  }
+
+  .viewport:hover .gif-controls,
+  .gif-controls:focus-within,
+  .viewport__stage.is-paused .gif-controls{
+    opacity:1;
+  }
+
+  /* Auf Touch gibt es kein Hover — dort dauerhaft gut sichtbar */
+  @media (hover:none){
+    .gif-controls{opacity:0.9;}
+  }
+
+  .gif-btn{
+    appearance:none;
+    width:32px;
+    height:32px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:rgba(12,12,14,0.72);
+    color:var(--text);
+    cursor:pointer;
+    line-height:0;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+
+  .gif-btn:hover{
+    background:rgba(28,28,31,0.95);
+    border-color:var(--accent-dim);
+    color:var(--accent);
+  }
+
+  .gif-btn svg{width:16px; height:16px; display:block;}
+
+  /* Ohne diese Zeile bliebe ein per [hidden] ausgeblendeter Knopf sichtbar -
+     das display:flex oben ist staerker als die Browser-Regel fuer [hidden]. */
+  .gif-btn[hidden]{display:none;}
+
+  /* Standbild waehrend der Pause: liegt an derselben Stelle und folgt denselben
+     Zuschnitt-Regeln wie das <img> darunter */
+  .viewport__stage canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:top;
+  }
+
+  .viewport__stage canvas.contain{object-fit:contain; object-position:center;}
+  .viewport__stage canvas.crop-center{object-position:center;}
+  .viewport__stage canvas.zoom-crop{transform:scale(1.35); transform-origin:center 30%;}
+  .viewport__stage canvas.crop-right{clip-path:inset(0 10px 0 0);}
+
+  /* ---------- Hotkey-Keycap (einheitlich für G / R / S) ---------- */
+  .keycap{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border:1.5px solid var(--text);
+    border-radius:7px;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:500;
+    font-size:14px;
+    color:var(--text);
+    flex-shrink:0;
+  }
+
+  /* UI-Element-Tag: für Menüpunkte/Felder in Blender, keine Tastatur-Taste — daher kein Keycap-Rahmen */
+  .ui-tag{
+    display:inline-block;
+    padding:2px 8px;
+    background:var(--surface-alt);
+    border-radius:5px;
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:0.95em;
+    color:var(--text);
+  }
+
+  .hotkey-list{
+    display:grid;
+    grid-template-columns: max-content 1fr;
+    row-gap:10px;
+    column-gap:14px;
+    margin-top:var(--space-lg);
+    margin-bottom:var(--space-md);
+    align-items:center;
+    padding:16px 20px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+
+  .hotkey-row{
+    display:contents;
+  }
+
+  .hotkey-row__keys{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .hotkey-row__keys .slash{
+    margin:0 -5px;
+  }
+
+  .hotkey-row__text{
+    display:flex;
+    align-items:center;
+    gap:0.4em;
+    font-size:14px;
+    color:var(--muted);
+  }
+
+  .hotkey-row__text .hkt-dash{
+    flex-shrink:0;
+  }
+
+  .hotkey-row__text .hkt-body{
+    flex:1;
+  }
+
+  .hotkey-row b{color:var(--text); font-weight:600;}
+
+  /* ---------- Icon-Chip (Move/Rotate/Scale + Achsen-Symbole, angelehnt an Blender-Toolbar) ---------- */
+  .icon-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:42px;
+    height:42px;
+    border-radius:10px;
+    background:var(--surface-alt);
+    border:1px solid var(--line);
+    flex-shrink:0;
+    overflow:hidden;
+  }
+
+  /* Grab/Rotate/Scale-Icons: eigener Hintergrundton, an das Bildmaterial angepasst,
+     Bild füllt die Box komplett aus, statt einen Rand freizulassen */
+  .icon-chip.icon-chip--filled{
+    background:#3a3a3a;
+  }
+
+  .icon-chip.icon-chip--filled img{
+    width:100% !important;
+    height:100% !important;
+    object-fit:cover !important;
+  }
+
+  .icon-chip svg{width:32px; height:32px; color:var(--text); display:block;}
+  .icon-chip img{display:block;}
+
+  .substep__label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.04em;
+    margin-bottom:8px;
+  }
+
+  /* ---------- Referenzbild unter dem Viewport (bewusst klein/unauffällig) ---------- */
+  .ref-figure{
+    margin-top:16px;
+    max-width:640px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    background:#0f0f0f;
+  }
+
+  /* Etwas kleinere Variante der Referenzabbildung */
+  .ref-figure--sm{
+    max-width:460px;
+  }
+
+  .ref-figure img{
+    width:100%;
+    height:auto;
+    display:block;
+    cursor:zoom-in;
+  }
+
+  .lightbox-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px;
+    z-index:1000;
+    cursor:zoom-out;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+
+  .lightbox-overlay.active{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .lightbox-overlay img{
+    max-width:100%;
+    max-height:100%;
+    border-radius:10px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
+  }
+
+  .ref-figure figcaption{
+    padding:8px 12px;
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.5;
+    border-top:1px solid var(--line);
+  }
+
+  /* ---------- Kleine Bildunterschrift unter einem GIF (z.B. Achsenbeschränkung kombinieren) ---------- */
+  .gif-caption{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:0;
+    padding:14px 16px;
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .gif-caption .keycap{
+    width:26px;
+    height:26px;
+    font-size:12px;
+  }
+
+  .gif-caption__chain{
+    display:inline-flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .gif-caption__arrow{
+    color:var(--line);
+    font-size:13px;
+  }
+
+  /* ---------- Kapitelübersicht (klickbare Sprungliste, auch für Modifier-Platzhalter genutzt) ---------- */
+  .stack-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    max-width:560px;
+  }
+
+  .stack-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px 18px;
+    background:#0f0f0f;
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--muted);
+    font-size:14px;
+    text-decoration:none;
+    position:relative;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+
+  a.stack-item{
+    cursor:pointer;
+  }
+
+  a.stack-item:hover{
+    background:var(--surface-alt);
+    border-color:var(--accent-dim);
+    color:var(--text);
+  }
+
+  .stack-item .idx{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--accent);
+    border:1px solid var(--accent-dim);
+    border-radius:4px;
+    padding:2px 6px;
+  }
+
+  .chapter-overview{
+    margin-bottom:48px;
+  }
+
+  .stack-subitems{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    margin:0 0 0 20px;
+    padding-left:16px;
+    border-left:2px solid var(--line);
+    background:linear-gradient(180deg, rgba(11,11,13,0.55), rgba(11,11,13,0.35));
+    border-radius:0;
+    /* Nur die Deckkraft weich einblenden — Höhe/Abstand (layoutrelevant,
+       verschieben nachfolgenden Inhalt) sofort umschalten. Sonst entsteht
+       ein Zeitfenster, in dem ein schneller Klick auf einen Unterlink noch
+       auf die alte (eingeklappte) Position trifft und danebengeht. */
+    transition:opacity .15s ease;
+  }
+
+  .stack-group.expanded .stack-subitems{
+    max-height:300px;
+    opacity:1;
+    margin-top:6px;
+    padding-top:8px;
+    padding-bottom:8px;
+  }
+
+  /* Aufklappen per Hover gilt NUR oberhalb des Breakpoints. Auf Touch-Geraeten
+     feuert der Browser beim ersten Tap zusaetzlich ein :hover/mouseenter mit —
+     dadurch war die Gruppe schon offen, bevor der Klick-Handler dran war, und
+     der Pfeil klappte scheinbar verkehrt herum. */
+  @media (min-width:641px){
+    .stack-group:hover .stack-subitems{
+      max-height:300px;
+      opacity:1;
+      margin-top:6px;
+      padding-top:8px;
+      padding-bottom:8px;
+    }
+  }
+
+  .stack-group > .stack-item{
+    padding-right:44px;
+  }
+
+  /* Der Pfeil ist ein EIGENES Element (nicht mehr ::after), damit er auf schmalen
+     Breiten ein eigenstaendiges Tap-Ziel bekommt: Tippen auf den Pfeil klappt die
+     Unterlinks nur auf/zu, Tippen auf die Schrift springt sofort. 44px breite
+     Trefferflaeche ueber die volle Zeilenhoehe. */
+  .stack-item__arrow{
+    position:absolute;
+    right:0;
+    top:0;
+    bottom:0;
+    width:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .stack-item__arrow::after{
+    content:'';
+    width:0;
+    height:0;
+    border-left:5px solid transparent;
+    border-right:5px solid transparent;
+    border-top:6px solid var(--muted);
+    opacity:0.45;
+    transition:opacity .15s ease;
+  }
+
+  .stack-group:hover > .stack-item .stack-item__arrow::after,
+  .stack-item:active .stack-item__arrow::after,
+  .stack-group.expanded > .stack-item .stack-item__arrow::after{
+    opacity:1;
+  }
+
+  .stack-group.expanded > .stack-item .stack-item__arrow::after{
+    border-top:none;
+    border-bottom:6px solid var(--muted);
+  }
+
+  .stack-subitem{
+    color:var(--muted);
+    font-size:13px;
+    text-decoration:none;
+    padding:4px 8px;
+    transition:color .15s ease;
+  }
+
+  .stack-subitem:hover{
+    color:var(--accent);
+  }
+
+  .placeholder-note{
+    margin-top:40px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--muted);
+    border-left:2px solid var(--line);
+    padding-left:12px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
+
+  @media (max-width:640px){
+    html, body{
+      overflow-x:hidden;
+      max-width:100vw;
+    }
+
+    .page{padding:110px 5vw 80px; overflow-x:hidden;}
+
+    /* Hintergrundblöcke: kein Ausbrechen mehr über den Seitenrand hinaus */
+    .step,
+    .substep{
+      padding-left:5vw;
+      padding-right:5vw;
+      margin-left:-5vw;
+      margin-right:-5vw;
+    }
+
+    /* Hotkey-Zeilen kleiner statt umgebrochen/gestapelt — Bindestrich+Text bleiben in derselben Zeile wie die Tasten */
+    .hotkey-list{
+      column-gap:8px;
+      padding:12px 14px;
+    }
+
+    .hotkey-row__keys{
+      gap:5px;
+    }
+
+    .keycap{
+      width:24px;
+      height:24px;
+      font-size:12px;
+    }
+
+    .hotkey-row__text{
+      font-size:12.5px;
+    }
+
+    .icon-chip{
+      width:32px;
+      height:32px;
+    }
+
+    .icon-chip svg{width:25px; height:25px;}
+    .icon-chip img{width:25px !important; height:25px !important;}
+
+    /* Tab-Buttons: umbrechen statt seitlich abzuschneiden */
+    .subtab-buttons{
+      flex-wrap:wrap;
+      width:100%;
+    }
+
+    .subtab-btn{
+      flex:1 1 auto;
+      padding:10px 14px;
+      font-size:12px;
+      text-align:center;
+    }
+
+    /* GIF-Bildunterschrift darf umbrechen */
+    .gif-caption{
+      font-size:12px;
+    }
+
+    h1.title{
+      font-size:clamp(1.7rem, 9vw, 2.6rem);
+    }
+
+    h2.step__title{
+      font-size:1.1rem;
+    }
+
+    /* GIF-Bildunterschrift: Tasten-Kette bricht komplett in eigene Zeile um, wenn es zu eng wird */
+    .gif-caption{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .gif-caption__text{
+      width:100%;
+    }
+  }
+</style>
+</head>
+<body class="layout-sidebar">
+
+<button type="button" class="sidebar-toggle-mini" aria-label="Seitenleiste öffnen/schließen" aria-expanded="false">
+  <svg class="toggle-arrow-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <circle cx="12" cy="12" r="11"/>
+    <path d="M14 7l-5 5 5 5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+<div class="sidebar-backdrop"></div>
+
+<aside class="sidebar">
+  <div class="sidebar-resize-handle"></div>
+  <button type="button" class="sidebar-toggle-desktop" aria-label="Seitenleiste ein-/ausklappen" aria-expanded="true">
+    <svg class="toggle-arrow-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <circle cx="12" cy="12" r="11"/>
+      <path d="M14 7l-5 5 5 5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <div class="sidebar__divider"></div>
+
+  <nav class="sidebar__nav" role="tablist" aria-label="Modus wählen">
+    <button class="sidebar__item active" data-page="workspace" role="tab" aria-selected="true">
+      <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M7.793,7.887V33.841H24.014V7.887H7.793Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="M30.5,7.887V33.841H62.945V7.887H30.5Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="M7.793,40.329V61.958H41.317V40.329H7.793Z" fill="none" stroke="currentColor" stroke-width="4"/><path d="M47.805,40.329V61.958h15.14V40.329H47.805Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+      <span class="sidebar__item-label">Workspace</span>
+    </button>
+    <button class="sidebar__item" data-page="view" role="tab" aria-selected="false">
+      <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M46.183,6.806A18.925,18.925,0,1,1,27.258,25.73,18.925,18.925,0,0,1,46.183,6.806ZM36.991,42.492L15.363,64.12l-7.57-7.57L29.421,34.922a35.48,35.48,0,0,0,4.326,5.407A9.4,9.4,0,0,0,36.991,42.492Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+      <span class="sidebar__item-label">View</span>
+    </button>
+
+    <div class="sidebar__group">
+      <button class="sidebar__item" data-page="selection" role="tab" aria-selected="false">
+        <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M14.282,27.353l41.094-7.57-17.3,37.849s-1.989-13.256-6.488-18.384S14.282,27.353,14.282,27.353Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+        <span class="sidebar__item-label">Selektion</span>
+      </button>
+      <div class="sidebar__sublist">
+        <button class="sidebar__item" data-page="active-object" role="tab" aria-selected="false">
+          <span class="sidebar__item-icon sidebar__item-icon--sub" aria-hidden="true"><svg viewBox="0 0 71 71" width="8" height="8"><circle cx="35.375" cy="35.469" r="9.844" fill="currentColor"/></svg></span>
+          <span class="sidebar__item-label">Active Element</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar__group">
+      <button class="sidebar__item" data-page="object" role="tab" aria-selected="false">
+        <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M10.956,36H27.421" fill="none" stroke="currentColor" stroke-width="5"/><path d="M20.933,25.19L7.956,36,20.933,46.818" fill="none" stroke="currentColor" stroke-width="4"/><path d="M61.189,36H44.724" fill="none" stroke="currentColor" stroke-width="5"/><path d="M51.212,25.19L64.189,36,51.212,46.818" fill="none" stroke="currentColor" stroke-width="4"/><path d="M36.073,10.825V27.337" fill="none" stroke="currentColor" stroke-width="5"/><path d="M46.917,20.833L36.073,7.825,25.228,20.833" fill="none" stroke="currentColor" stroke-width="4"/><path d="M36.073,61.183V44.671" fill="none" stroke="currentColor" stroke-width="5"/><path d="M46.917,51.175L36.073,64.183,25.228,51.175" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+        <span class="sidebar__item-label">Transform</span>
+      </button>
+      <div class="sidebar__sublist">
+        <button class="sidebar__item" data-page="apply-transforms" role="tab" aria-selected="false">
+          <span class="sidebar__item-icon sidebar__item-icon--sub" aria-hidden="true"><svg viewBox="0 0 71 71" width="8" height="8"><circle cx="35.375" cy="35.469" r="9.844" fill="currentColor"/></svg></span>
+          <span class="sidebar__item-label">Apply Transform</span>
+        </button>
+        <button class="sidebar__item" data-page="origin" role="tab" aria-selected="false">
+          <span class="sidebar__item-icon sidebar__item-icon--sub" aria-hidden="true"><svg viewBox="0 0 71 71" width="8" height="8"><circle cx="35.375" cy="35.469" r="9.844" fill="currentColor"/></svg></span>
+          <span class="sidebar__item-label">Origin</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="sidebar__item" data-page="edit" role="tab" aria-selected="false">
+      <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><circle cx="17.125" cy="17.063" r="7" fill="currentColor"/><circle cx="56.063" cy="16.063" r="7" fill="currentColor"/><circle cx="16.125" cy="54.969" r="7" fill="currentColor"/><circle cx="55.063" cy="54.969" r="7" fill="currentColor"/><path d="M16.526,16.376V55.306H55.456V16.376H16.526Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+      <span class="sidebar__item-label">Edit Mode</span>
+    </button>
+    <button class="sidebar__item" data-page="modifier" role="tab" aria-selected="false">
+      <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M44,9a26.758,26.758,0,0,0-13.188,7.706C25.355,22.837,26.893,33.7,26.893,33.7l-15.14,15.14s-1.9,6.846,2.163,10.814,10.049,0.317,10.049.317l14.058-15.14s11.921,1.685,18.023-4.417c4.476-4.476,6.882-14.529,6.882-14.529l-4.588-4.588L49.165,30.47l-6.117,3.059-4.575-4.474,3.244-6.488,7.978-8.919Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+      <span class="sidebar__item-label">Modifier</span>
+    </button>
+  </nav>
+
+  <div class="sidebar__divider"></div>
+
+  <button type="button" class="lang-switch" aria-label="Sprache wechseln">
+    <span class="lang-switch__icon" aria-hidden="true">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJcAAACbCAYAAABvXQkCAAAABGdBTUEAALGPC/xhBQAACjVpQ0NQc1JHQiBJRUM2MTk2Ni0yLjEAAEjHnZZ3VFTXFofPvXd6oc0wAlKG3rvAANJ7k15FYZgZYCgDDjM0sSGiAhFFRJoiSFDEgNFQJFZEsRAUVLAHJAgoMRhFVCxvRtaLrqy89/Ly++Osb+2z97n77L3PWhcAkqcvl5cGSwGQyhPwgzyc6RGRUXTsAIABHmCAKQBMVka6X7B7CBDJy82FniFyAl8EAfB6WLwCcNPQM4BOB/+fpFnpfIHomAARm7M5GSwRF4g4JUuQLrbPipgalyxmGCVmvihBEcuJOWGRDT77LLKjmNmpPLaIxTmns1PZYu4V8bZMIUfEiK+ICzO5nCwR3xKxRoowlSviN+LYVA4zAwAUSWwXcFiJIjYRMYkfEuQi4uUA4EgJX3HcVyzgZAvEl3JJS8/hcxMSBXQdli7d1NqaQffkZKVwBALDACYrmcln013SUtOZvBwAFu/8WTLi2tJFRbY0tba0NDQzMv2qUP91829K3NtFehn4uWcQrf+L7a/80hoAYMyJarPziy2uCoDOLQDI3fti0zgAgKSobx3Xv7oPTTwviQJBuo2xcVZWlhGXwzISF/QP/U+Hv6GvvmckPu6P8tBdOfFMYYqALq4bKy0lTcinZ6QzWRy64Z+H+B8H/nUeBkGceA6fwxNFhImmjMtLELWbx+YKuGk8Opf3n5r4D8P+pMW5FonS+BFQY4yA1HUqQH7tBygKESDR+8Vd/6NvvvgwIH554SqTi3P/7zf9Z8Gl4iWDm/A5ziUohM4S8jMX98TPEqABAUgCKpAHykAd6ABDYAasgC1wBG7AG/iDEBAJVgMWSASpgA+yQB7YBApBMdgJ9oBqUAcaQTNoBcdBJzgFzoNL4Bq4AW6D+2AUTIBnYBa8BgsQBGEhMkSB5CEVSBPSh8wgBmQPuUG+UBAUCcVCCRAPEkJ50GaoGCqDqqF6qBn6HjoJnYeuQIPQXWgMmoZ+h97BCEyCqbASrAUbwwzYCfaBQ+BVcAK8Bs6FC+AdcCXcAB+FO+Dz8DX4NjwKP4PnEIAQERqiihgiDMQF8UeikHiEj6xHipAKpAFpRbqRPuQmMorMIG9RGBQFRUcZomxRnqhQFAu1BrUeVYKqRh1GdaB6UTdRY6hZ1Ec0Ga2I1kfboL3QEegEdBa6EF2BbkK3oy+ib6Mn0K8xGAwNo42xwnhiIjFJmLWYEsw+TBvmHGYQM46Zw2Kx8lh9rB3WH8vECrCF2CrsUexZ7BB2AvsGR8Sp4Mxw7rgoHA+Xj6vAHcGdwQ3hJnELeCm8Jt4G749n43PwpfhGfDf+On4Cv0CQJmgT7AghhCTCJkIloZVwkfCA8JJIJKoRrYmBRC5xI7GSeIx4mThGfEuSIemRXEjRJCFpB+kQ6RzpLuklmUzWIjuSo8gC8g5yM/kC+RH5jQRFwkjCS4ItsUGiRqJDYkjiuSReUlPSSXK1ZK5kheQJyeuSM1J4KS0pFymm1HqpGqmTUiNSc9IUaVNpf+lU6RLpI9JXpKdksDJaMm4ybJkCmYMyF2TGKQhFneJCYVE2UxopFykTVAxVm+pFTaIWU7+jDlBnZWVkl8mGyWbL1sielh2lITQtmhcthVZKO04bpr1borTEaQlnyfYlrUuGlszLLZVzlOPIFcm1yd2WeydPl3eTT5bfJd8p/1ABpaCnEKiQpbBf4aLCzFLqUtulrKVFS48vvacIK+opBimuVTyo2K84p6Ss5KGUrlSldEFpRpmm7KicpFyufEZ5WoWiYq/CVSlXOavylC5Ld6Kn0CvpvfRZVUVVT1Whar3qgOqCmrZaqFq+WpvaQ3WCOkM9Xr1cvUd9VkNFw08jT6NF454mXpOhmai5V7NPc15LWytca6tWp9aUtpy2l3audov2Ax2yjoPOGp0GnVu6GF2GbrLuPt0berCehV6iXo3edX1Y31Kfq79Pf9AAbWBtwDNoMBgxJBk6GWYathiOGdGMfI3yjTqNnhtrGEcZ7zLuM/5oYmGSYtJoct9UxtTbNN+02/R3Mz0zllmN2S1zsrm7+QbzLvMXy/SXcZbtX3bHgmLhZ7HVosfig6WVJd+y1XLaSsMq1qrWaoRBZQQwShiXrdHWztYbrE9Zv7WxtBHYHLf5zdbQNtn2iO3Ucu3lnOWNy8ft1OyYdvV2o/Z0+1j7A/ajDqoOTIcGh8eO6o5sxybHSSddpySno07PnU2c+c7tzvMuNi7rXM65Iq4erkWuA24ybqFu1W6P3NXcE9xb3Gc9LDzWepzzRHv6eO7yHPFS8mJ5NXvNelt5r/Pu9SH5BPtU+zz21fPl+3b7wX7efrv9HqzQXMFb0ekP/L38d/s/DNAOWBPwYyAmMCCwJvBJkGlQXlBfMCU4JvhI8OsQ55DSkPuhOqHC0J4wybDosOaw+XDX8LLw0QjjiHUR1yIVIrmRXVHYqLCopqi5lW4r96yciLaILoweXqW9KnvVldUKq1NWn46RjGHGnIhFx4bHHol9z/RnNjDn4rziauNmWS6svaxnbEd2OXuaY8cp40zG28WXxU8l2CXsTphOdEisSJzhunCruS+SPJPqkuaT/ZMPJX9KCU9pS8Wlxqae5Mnwknm9acpp2WmD6frphemja2zW7Fkzy/fhN2VAGasyugRU0c9Uv1BHuEU4lmmfWZP5Jiss60S2dDYvuz9HL2d7zmSue+63a1FrWWt78lTzNuWNrXNaV78eWh+3vmeD+oaCDRMbPTYe3kTYlLzpp3yT/LL8V5vDN3cXKBVsLBjf4rGlpVCikF84stV2a9021DbutoHt5turtn8sYhddLTYprih+X8IqufqN6TeV33zaEb9joNSydP9OzE7ezuFdDrsOl0mX5ZaN7/bb3VFOLy8qf7UnZs+VimUVdXsJe4V7Ryt9K7uqNKp2Vr2vTqy+XeNc01arWLu9dn4fe9/Qfsf9rXVKdcV17w5wD9yp96jvaNBqqDiIOZh58EljWGPft4xvm5sUmoqbPhziHRo9HHS4t9mqufmI4pHSFrhF2DJ9NProje9cv+tqNWytb6O1FR8Dx4THnn4f+/3wcZ/jPScYJ1p/0Pyhtp3SXtQBdeR0zHYmdo52RXYNnvQ+2dNt293+o9GPh06pnqo5LXu69AzhTMGZT2dzz86dSz83cz7h/HhPTM/9CxEXbvUG9g5c9Ll4+ZL7pQt9Tn1nL9tdPnXF5srJq4yrndcsr3X0W/S3/2TxU/uA5UDHdavrXTesb3QPLh88M+QwdP6m681Lt7xuXbu94vbgcOjwnZHokdE77DtTd1PuvriXeW/h/sYH6AdFD6UeVjxSfNTws+7PbaOWo6fHXMf6Hwc/vj/OGn/2S8Yv7ycKnpCfVEyqTDZPmU2dmnafvvF05dOJZ+nPFmYKf5X+tfa5zvMffnP8rX82YnbiBf/Fp99LXsq/PPRq2aueuYC5R69TXy/MF72Rf3P4LeNt37vwd5MLWe+x7ys/6H7o/ujz8cGn1E+f/gUDmPP8YppLQgAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAAsTAAALEwEAmpwYAAAGMWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDIgNzkuYTZhNjM5NiwgMjAyNC8wMy8xMi0wNzo0ODoyMyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI1LjkgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNi0wOC0yN1QxMzowNjo0NiswMjowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDgtMjdUMTM6MDg6NTIrMDI6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDgtMjdUMTM6MDg6NTIrMDI6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjE5OTlkMmRhLTk3MDItYzg0MS1hZDgwLTEyZDY4ZjNhYmE4MCIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjAwYWZkM2VjLWQzYWMtNmU0Yy05NjM3LTJiYTgyMjEzMmJhZCIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ4bXAuZGlkOjJlYTQ2NWRjLTEwYjUtOGQ0OS1hYTI2LTNmYWZhZjE5MzBmNiI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MmVhNDY1ZGMtMTBiNS04ZDQ5LWFhMjYtM2ZhZmFmMTkzMGY2IiBzdEV2dDp3aGVuPSIyMDI2LTA4LTI3VDEzOjA2OjQ2KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjUuOSAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNvbnZlcnRlZCIgc3RFdnQ6cGFyYW1ldGVycz0iZnJvbSBhcHBsaWNhdGlvbi92bmQuYWRvYmUucGhvdG9zaG9wIHRvIGltYWdlL3BuZyIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTk5OWQyZGEtOTcwMi1jODQxLWFkODAtMTJkNjhmM2FiYTgwIiBzdEV2dDp3aGVuPSIyMDI2LTA4LTI3VDEzOjA4OjUyKzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjUuOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+VKiR4wAAFP9JREFUeNrtXY9HX9//33/xMslLXl4ykmQymSQZmUnmLZMkkkwyM0kSM0mSTCaJycwkk5lEZjJJZpIZM8kkmWQmZpJMn/v6fh+vt7v7ft3n83nuPefe+3rtjKd5v/e65z7vOY/zPM/f59LFxcUlS5ZMkJ0ESxZcliy4SmNSLl2qcui6Q40ONTvUgr+b8P/rHbrqULVDlXbOLLjc4KkGcDoc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" alt="">
+    </span>
+    <span class="lang-switch__label">EN</span>
+  </button>
+</aside>
+
+<header class="menu-d">
+  <div class="menu-d__brand">
+    <span class="dot"></span>
+    <span class="menu-d__title"><b>3D-LABOR</b><span>Blender Keymap</span></span>
+  </div>
+</header>
+
+<!-- ---------- Seite: Workspace ---------- -->
+<section id="workspace" class="page active">
+  <div class="eyebrow">Workspace</div>
+  <h1 class="title">Wechsel zwischen Modi</h1>
+  <p class="subtitle">Schnell zwischen Object Mode, Edit Mode und weiteren Workspaces wechseln.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-workspace-wechsel"><span class="idx">01</span> Wechsel zwischen verschiedenen Modi</a>
+      <a class="stack-item" href="#step-workspace-search"><span class="idx">02</span> Search Menü</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-workspace-wechsel">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Wechsel zwischen verschiedenen Modi</h2>
+    <p class="step__desc">Häufig wechselt man schnell zwischen Editier- und Objekt-Modus hin und her. Dafür ist die Tab-Taste sehr praktisch.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Tab</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">wechselt zwischen den letzten beiden genutzten Modi</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap" style="width:auto; padding:0 8px;">Tab</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">öffnet das Radialmenü, um zwischen allen verfügbaren Modi frei zu wechseln</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/workspace-01-mit-tab-und-strg-tab-zwischen.gif" alt="Animation: Mit Tab und Strg+Tab zwischen Object Mode, Edit Mode und weiteren Modi wechseln">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-workspace-search">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Search Menü</h2>
+    <p class="step__desc">Jeder Befehl lässt sich über das Search Menü ausführen, das je nach Workspace-Fenster und Modus alle Befehle auflistet, die in diesem Kontext verfügbar sind.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">F3</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Search Menü</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/workspace-02-search-menue-wird-mit-f3-geoeffnet.gif" alt="Animation: Search Menü wird mit F3 geöffnet">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- Seite 1: Transform ---------- -->
+
+<!-- ---------- Seite: View ---------- -->
+<section id="view" class="page">
+  <div class="eyebrow">View</div>
+  <h1 class="title">Orientierung &amp; Sichtbarkeit</h1>
+  <p class="subtitle">Werkzeuge, um im Viewport den Überblick zu behalten.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-view-frame"><span class="idx">01</span> Fokus auf eines oder mehrere Objekte</a>
+      <a class="stack-item" href="#step-view-isolation"><span class="idx">02</span> Isolation eines oder mehrere Objekte</a>
+      <a class="stack-item" href="#step-view-favorites"><span class="idx">03</span> Quick Favorites</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-view-frame">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Fokus auf eines oder mehrere Objekte</h2>
+    <p class="step__desc">Blender verliert seine räumliche Orientierung im Viewport meist dann, wenn man sich beim Navigieren mit der mittleren Maustaste zu weit von den Objekten wegbewegt hat oder sich im leeren Raum bewegt.</p>
+
+    <div class="callout">
+      <b>Hinweis:</b> In Blender wird das amerikanische Tastatur-Layout angezeigt, daher steht bei den dortigen Tooltips <span class="keycap" style="width:auto; height:20px; padding:0 6px; font-size:10px; vertical-align:middle;">Numpad ,</span>.
+    </div>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 10px;">Numpad .</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Frame Selected</b> - Fokus auf ausgewählte Objekte/Elemente</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/view-01-fokus-wird-mit-numpad-auf-die.gif" alt="Animation: Fokus wird mit Numpad . auf die Auswahl gesetzt">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-view-isolation">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Isolation eines oder mehrere Objekte</h2>
+    <p class="step__desc">Wenn man an einer großen Szene oder vielen Objekten arbeitet, ist es hilfreich, wenn man ein paar Objekte ausblenden kann.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 10px;">Numpad /</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Local View</b> - ausgewählte Objekte isolieren</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/view-02-ausgewaehlte-objekte-werden-mit-numpad-isoliert.gif" alt="Animation: Ausgewählte Objekte werden mit Numpad / isoliert">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-view-favorites">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Quick Favorites</h2>
+    <p class="step__desc">Einige Laptops haben kein Numpad.<br>Hier kann man entweder das Blender-Keyboard-Layout komplett über Edit → Preferences ändern oder einige wenige Funktionen den <i>Quick Favorites</i> zuordnen.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Add to Quick Favorites</b> - Diesen Menüpunkt den Quick Favorites zuordnen</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">Q</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Quick Favorites</b> - Quick Favorites öffnen</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/view-03-quick-favorites-menue-wird-mit-q.gif" alt="Animation: Quick-Favorites-Menü wird mit Q geöffnet">
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section id="object" class="page">
+  <div class="eyebrow">Transform</div>
+  <h1 class="title">Grundoperationen</h1>
+  <p class="subtitle">Objekte im Raum transformieren — verschieben, drehen, skalieren.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-move-rotate-scale"><span class="idx">01</span> Move / Rotate / Scale</a>
+      <div class="stack-group">
+        <a class="stack-item" href="#step-achsen"><span class="idx">02</span> Auf ausgewählte Achsen beschränken</a>
+        <div class="stack-subitems">
+          <a class="stack-subitem" href="#substep-eine-achse">Bewegung auf eine Achse beschränken</a>
+          <a class="stack-subitem" href="#substep-zwei-achsen">Bewegung auf zwei Achsen beschränken</a>
+        </div>
+      </div>
+      <a class="stack-item" href="#step-massangabe"><span class="idx">03</span> Auf feste Maßangaben beschränken</a>
+      <a class="stack-item" href="#step-zuruecksetzen"><span class="idx">04</span> Auf Ausgangsmaße zurückstellen</a>
+    </div>
+  </div>
+
+  <!-- ===== STEP-TEMPLATE — diesen Block für jedes neue GIF/Bild kopieren ===== -->
+  <div class="step" id="step-move-rotate-scale">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <div class="step__title-row">
+      <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/><line x1="12" y1="12" x2="12" y2="5" stroke="#4d9dff"/><line x1="12" y1="12" x2="7" y2="17" stroke="#4dff88"/></svg></span>
+      <h2 class="step__title">Move / Rotate / Scale</h2>
+    </div>
+    <p class="step__desc">Mit diesen Shortcuts bewegt, rotiert oder skaliert man ein Objekt frei im Raum.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys">
+        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-01-move-symbol.png" alt="Move-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="keycap">G</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Grab</b> - Objekt frei bewegen
+      </span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys">
+        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-02-rotate-symbol.png" alt="Rotate-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="keycap">R</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Rotate</b> - Objekt frei drehen
+      </span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys">
+        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-03-scale-symbol.png" alt="Scale-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="keycap">S</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Scale</b> - Objekt frei skalieren
+      </span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="crop-center" src="assets/object-04-objekt-wird-mit-g-r-und.gif" alt="Animation: Objekt wird mit G, R und S verschoben, rotiert und skaliert">
+      </div>
+    </div>
+
+    <figure class="ref-figure">
+      <img decoding="async" width="592" height="326" src="assets/object-05-bezugslinie-vom-origin-zum-mauszeiger-waehrend.png" alt="Bezugslinie vom Origin zum Mauszeiger während einer Transformation">
+      <figcaption>Je weiter man mit der Maus vom Origin (Mittelpunkt) entfernt ist, desto sanfter funktionieren die Bewegungen.</figcaption>
+    </figure>
+  </div>
+
+  <div class="step" id="step-achsen">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <div class="step__title-row">
+      <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/></svg></span>
+      <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/><line x1="12" y1="12" x2="12" y2="5" stroke="#4d9dff"/></svg></span>
+      <h2 class="step__title">Auf ausgewählte Achsen beschränken</h2>
+    </div>
+    <p class="step__desc">Während einer Bewegung lässt sich die Transformation auf eine oder zwei Achsen einschränken. Lässt sich auch mit anderen Funktionen kombinieren, z. B. Snapping, Duplizieren, Extrudieren, etc.</p>
+
+    <div class="substep" id="substep-eine-achse">
+      <div class="step__title-row" style="margin-bottom:12px;">
+        <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/></svg></span>
+        <div class="step__label" style="margin:0;">Bewegung auf eine Achse beschränken</div>
+      </div>
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys">
+          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bewegung auf eine Achse beschränken
+        </span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="crop-bottom" src="assets/object-06-bewegung-wird-mit-x-y-oder.gif" alt="Animation: Bewegung wird mit X, Y oder Z auf eine Achse beschränkt">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-zwei-achsen" style="margin-top:0;">
+      <div class="step__title-row" style="margin-bottom:12px;">
+        <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/><line x1="12" y1="12" x2="12" y2="5" stroke="#4d9dff"/></svg></span>
+        <div class="step__label" style="margin:0;">Bewegung auf zwei Achsen beschränken</div>
+      </div>
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys">
+          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bewegung auf zwei Achsen beschränken
+        </span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="crop-bottom" src="assets/object-07-bewegung-wird-mit-shift-x-shift.gif" alt="Animation: Bewegung wird mit Shift+X, Shift+Y oder Shift+Z auf zwei Achsen beschränkt">
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ===== ENDE STEP-TEMPLATE ===== -->
+
+  <div class="step" id="step-massangabe">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Auf feste Maßangaben beschränken</h2>
+    <p class="step__desc">Bewegung mit Zahlenangaben — während einer Transformation lässt sich der genaue Wert direkt eintippen.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys">
+        <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap" style="width:auto; padding:0 8px;">Zahl</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bewegung, Rotation oder Skalierung um exakten Wert
+      </span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/object-08-transformation-wird-durch-direkte-zahleneingabe-auf.gif" alt="Animation: Transformation wird durch direkte Zahleneingabe auf einen exakten Wert festgelegt">
+      </div>
+      <div class="gif-caption">
+        <span class="gif-caption__chain">
+          <span class="keycap" style="width:auto; padding:0 8px;">G</span>
+          <span class="gif-caption__arrow">→</span>
+          <span class="keycap" style="width:auto; padding:0 8px;">X</span>
+          <span class="gif-caption__arrow">→</span>
+          <span class="keycap" style="width:auto; padding:0 8px;">Zahl</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/object-09-ausgewaehlter-bereich-wird-mit-s-x.gif" alt="Animation: Ausgewählter Bereich wird mit S, X/Y/Z und 0 glattgezogen">
+      </div>
+      <div class="gif-caption">
+        <span class="gif-caption__text">Mit</span>
+        <span class="gif-caption__chain">
+          <span class="keycap">S</span>
+          <span class="gif-caption__arrow">→</span>
+          <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span>
+          <span class="gif-caption__arrow">→</span>
+          <span class="keycap">0</span>
+        </span>
+        <span class="gif-caption__text">kann man den ausgewählten Bereich glatt ziehen (senkrecht zur Transform Orientation)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-zuruecksetzen">
+    <div class="step-divider"><span class="step-divider__num">04</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Auf Ausgangsmaße zurückstellen</h2>
+    <p class="step__desc">Eine Transformation lässt sich jederzeit wieder auf ihren ursprünglichen Wert zurücksetzen.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys">
+        <span class="keycap" style="width:auto; padding:0 16px;" title="Zeichen löschen / Backspace">⌫</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Zurücksetzen
+      </span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/object-10-transformation-wird-auf-die-ausgangsmasse-zurueckgesetzt.gif" alt="Animation: Transformation wird auf die Ausgangsmaße zurückgesetzt">
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ---------- Seite: Selektion ---------- -->
+<section id="selection" class="page">
+  <div class="eyebrow">Selection</div>
+  <h1 class="title">Auswählen &amp; Abziehen</h1>
+  <p class="subtitle">Elemente im Outliner und im 3D-Viewport gezielt zur Auswahl hinzufügen oder daraus entfernen.</p>
+
+  <div class="callout">
+    <b>Achtung:</b> Dieselben Tasten können je nach Kontext — 3D-Viewport oder Outliner-Fenster — unterschiedliche Funktionen auslösen.
+  </div>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-outliner"><span class="idx">01</span> Selektion im Outliner / Explorer</a>
+      <a class="stack-item" href="#step-object-mode"><span class="idx">02</span> Selektion im Object Mode</a>
+      <div class="stack-group">
+        <a class="stack-item" href="#step-edit-mode"><span class="idx">03</span> Selektion im Edit Mode</a>
+        <div class="stack-subitems">
+          <a class="stack-subitem" href="#substep-select-linked">Select Linked</a>
+          <a class="stack-subitem" href="#substep-loop-selection">Loop Selection</a>
+          <a class="stack-subitem" href="#substep-kuerzeste-strecke">Kürzeste Strecke selektieren</a>
+          <a class="stack-subitem" href="#substep-erweitern-verringern">Selektion erweitern/verringern</a>
+        </div>
+      </div>
+      <a class="stack-item" href="#step-xray"><span class="idx">04</span> Selektion versteckter Bereiche - Xray</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-outliner">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Selektion im Outliner / Explorer</h2>
+    <p class="step__desc">Die Selektion im Outliner funktioniert ähnlich wie in Windows.</p>
+
+    <div class="substep">
+<div class="subtab-buttons">
+      <button class="subtab-btn active" data-subtab="outliner-add">Auswahl hinzufügen</button>
+      <button class="subtab-btn" data-subtab="outliner-remove">Auswahl abziehen</button>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="outliner-add"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">einzelne Elemente hinzufügen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Box-Selektion</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bereich zwischen erstem und zweitem Klick</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">der momentanen Auswahl eine Box-Selektion hinzufügen</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/selection-01-elemente-im-outliner-werden-zur-auswahl.gif" alt="Animation: Elemente im Outliner werden zur Auswahl hinzugefügt">
+        </div>
+      </div>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="outliner-remove" style="display:none;"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + 2× <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">einzelne Elemente abziehen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Box-Selektion abziehen</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/selection-02-elemente-im-outliner-werden-abgewaehlt.gif" alt="Animation: Elemente im Outliner werden abgewählt">
+        </div>
+      </div>
+    </div>
+    </div>
+
+  </div>
+
+  <div class="step" id="step-object-mode">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Selektion im Object Mode</h2>
+    <p class="step__desc">Wenn man im Objekt Mode etwas abwählen bzw. deselektieren möchte, benutzt Blender ein etwas eigenes System, das auf dem <a class="inline-link" href="#active-object">aktiven Element</a> basiert.</p>
+
+    <div class="substep">
+<div class="subtab-buttons">
+      <button class="subtab-btn active" data-subtab="objectmode-add">Auswahl hinzufügen</button>
+      <button class="subtab-btn" data-subtab="objectmode-remove">Auswahl abziehen</button>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="objectmode-add"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">A</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Alles auswählen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Box-Selektion</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">der momentanen Auswahl eine Box-Selektion hinzufügen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">einzelne Elemente hinzufügen</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" src="assets/selection-03-objekte-im-object-mode-werden-zur.gif" alt="Animation: Objekte im Object Mode werden zur Auswahl hinzugefügt">
+        </div>
+      </div>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="objectmode-remove" style="display:none;"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">A</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Alles abziehen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">der momentanen Auswahl eine Box-Selektion abziehen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + 2× <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">einzelne Elemente abziehen</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" src="assets/selection-04-objekte-im-object-mode-werden-abgewaehlt.gif" alt="Animation: Objekte im Object Mode werden abgewählt">
+        </div>
+      </div>
+    </div>
+    </div>
+
+  </div>
+
+  <div class="step" id="step-edit-mode">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Selektion im Edit Mode</h2>
+    <p class="step__desc">Im Edit-Mode gibt es noch zahlreichere Methoden der Selektion.</p>
+
+    <div class="substep" id="substep-select-linked">
+      <div class="step__label">Select Linked</div>
+      <p class="step__desc">Selektiert miteinander verbundene Elemente innerhalb eines Objekts.</p>
+
+      <div class="subtab-buttons">
+        <button class="subtab-btn active" data-subtab="editlinked-add">Auswahl hinzufügen</button>
+        <button class="subtab-btn" data-subtab="editlinked-remove">Auswahl abziehen</button>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="editlinked-add">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">L</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">miteinander verbundene Meshes selektieren (kein Shift nötig zum Hinzufügen)</span></span></div>
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">L</span></span><span class="hotkey-row__text" title="Select Linked - miteinander verbundene Meshes selektieren"><span class="hkt-dash">-</span><span class="hkt-body">Verbundene Meshes von vorher selektierten Elementen auswählen</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage">
+            <img decoding="async" class="crop-center" src="assets/selection-05-mit-l-werden-miteinander-verbundene-meshes.gif" alt="Animation: Mit L werden miteinander verbundene Meshes selektiert">
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="editlinked-remove" style="display:none;">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap">L</span></span><span class="hotkey-row__text" title="Select Linked - miteinander verbundene Meshes selektieren"><span class="hkt-dash">-</span><span class="hkt-body">Verbundene Meshes abziehen</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage">
+            <img decoding="async" class="crop-center" src="assets/selection-06-mit-shift-l-werden-miteinander-verbundene.gif" alt="Animation: Mit Shift+L werden miteinander verbundene Meshes abgewählt">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-loop-selection" style="margin-top:0;">
+      <div class="step__label">Loop Selection</div>
+      <p class="step__desc">Selektiert eine Strecke miteinander verbundener Elemente, solange sie zu Vierecken/Quads gehören.</p>
+
+      <div class="subtab-buttons">
+        <button class="subtab-btn active" data-subtab="loop-add">Auswahl hinzufügen</button>
+        <button class="subtab-btn" data-subtab="loop-remove">Auswahl abziehen</button>
+        <button class="subtab-btn" data-subtab="loop-special">Sonderfall offene Kanten</button>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="loop-add">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Loop selektieren (funktioniert nur bei Vierecken/Quads)</span></span></div>
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Der momentanen Auswahl einen weiteren Loop hinzufügen</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage viewport__stage--tall">
+            <img decoding="async" class="contain" src="assets/selection-07-mit-alt-und-shift-alt-linksklick.gif" alt="Animation: Mit Alt und Shift+Alt+Linksklick werden Loops zur Auswahl hinzugefügt">
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="loop-remove" style="display:none;">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Der momentanen Auswahl einen Loop entziehen</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage viewport__stage--tall">
+            <img decoding="async" class="contain" src="assets/selection-08-ein-loop-wird-aus-der-auswahl.gif" alt="Animation: Ein Loop wird aus der Auswahl entfernt">
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="loop-special" style="display:none;">
+        <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + 2× <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Wählt offene Kanten aus, unabhängig von Vierecken/Quads</span></span></div>
+      </div>
+        <div class="viewport">
+        <div class="viewport__stage viewport__stage--tall">
+          <img decoding="async" class="contain" src="assets/selection-09-offene-kanten-werden-unabhaengig-von-quads.gif" alt="Animation: Offene Kanten werden unabhängig von Quads ausgewählt">
+        </div>
+      </div>
+      </div>
+
+      <figure class="ref-figure">
+        <img decoding="async" width="492" height="457" src="assets/selection-10-klickrichtung-vom-flaechenmittelpunkt-aus-bestimmt-den.jpg" alt="Klickrichtung vom Flächenmittelpunkt aus bestimmt den ausgewählten Loop">
+        <figcaption>Bei Flächen entscheidet die Klickrichtung vom Mittelpunkt aus, welcher Loop ausgewählt wird.</figcaption>
+      </figure>
+</div>
+
+    <div class="substep" id="substep-kuerzeste-strecke">
+      <div class="step__label">Kürzeste Strecke selektieren</div>
+      <p class="step__desc">Funktioniert auch bei Flächen, die keine Vierecke sind. Nützlich für große Bereiche, bei denen die Loop-Selektion zu limitiert ist.</p>
+      <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Kürzeste Strecke zwischen zwei Elementen auswählen</span></span></div>
+    </div>
+      <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" src="assets/selection-11-kuerzeste-strecke-zwischen-zwei-elementen-wird.gif" alt="Animation: Kürzeste Strecke zwischen zwei Elementen wird ausgewählt">
+      </div>
+    </div>
+    </div>
+
+    <div class="substep" id="substep-erweitern-verringern">
+      <div class="step__label">Selektion erweitern/verringern</div>
+      <p class="step__desc">Vergrößert die momentane Auswahl. Besonders praktisch bei runden Objekten.</p>
+
+      <div class="subtab-buttons">
+        <button class="subtab-btn active" data-subtab="expand-add">Auswahl hinzufügen</button>
+        <button class="subtab-btn" data-subtab="expand-remove">Auswahl abziehen</button>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="expand-add">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap" style="width:auto; padding:0 10px;">Numpad +</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Selektion um angrenzende Elemente erweitern</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage">
+            <img decoding="async" class="contain" src="assets/selection-12-selektion-wird-mit-strg-numpad-erweitert.gif" alt="Animation: Selektion wird mit Strg+Numpad + erweitert">
+          </div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" data-subtab-panel="expand-remove" style="display:none;">
+        <div class="hotkey-list">
+          <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap" style="width:auto; padding:0 10px;">Numpad -</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Selektion um äußere Elemente verringern</span></span></div>
+        </div>
+        <div class="viewport">
+          <div class="viewport__stage">
+            <img decoding="async" class="contain" src="assets/selection-13-selektion-wird-mit-strg-numpad-verringert.gif" alt="Animation: Selektion wird mit Strg+Numpad - verringert">
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+  <div class="step" id="step-xray">
+    <div class="step-divider"><span class="step-divider__num">04</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Selektion versteckter Bereiche - Xray</h2>
+    <p class="step__desc">Im normalen Modus werden nur Flächen ausgewählt, die zur Kamera zeigen. Mit dem XRay-Modus kann man durch alles hindurchschauen und auch anwählen.</p>
+
+    <div class="callout">
+      <b>Tipp:</b> Bei Flächen über den mittleren schwarzen Punkt drüberziehen, um sie mit auszuwählen.
+    </div>
+
+    <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Menü XRay aktivieren/deaktivieren</span></span></div>
+      </div>
+    <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/selection-14-xray-menue-wird-mit-alt-z.gif" alt="Animation: XRay-Menü wird mit Alt+Z aktiviert, um versteckte Bereiche zu selektieren">
+        </div>
+      </div>
+  </div>
+
+
+  
+
+</section>
+
+<!-- ---------- Seite 2: Edit Mode ---------- -->
+
+<!-- ---------- Seite: Active Object ---------- -->
+<section id="active-object" class="page">
+  <div class="eyebrow">Active Element</div>
+  <h1 class="title">Aktives Element</h1>
+  <p class="subtitle">Bei mehreren ausgewählten Objekten bestimmt das aktive Element, welche Werte angezeigt und verändert werden.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-active-object"><span class="idx">01</span> Aktives Element</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-active-object">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Aktives Element</h2>
+    <p class="step__desc">Wenn man in Blender mehrere Objekte oder Elemente auswählt, fällt auf, dass alle die gleiche Markierung erhalten und ein Objekt oder Element etwas hervorsticht.</p>
+    <p class="step__desc">Das ist das sogenannte <b>Active Object/Element</b>.</p>
+    <p class="step__desc">Grundsätzlich sieht man nur die Werte, Modifier etc. des aktiven Objekts und wenn man diese Werte in den Menüpunkten verändert, ist nur das aktive Element betroffen.</p>
+    <figure class="ref-figure ref-figure--sm">
+      <img decoding="async" width="1584" height="349" src="assets/active_object%20copy.jpg" alt="Aktives Element hervorgehoben: Fläche im Edit Mode, Objekt im 3D-Viewport und Eintrag im Outliner">
+      <figcaption>Das aktive Element sticht in jedem Kontext anders hervor: Fläche im Edit Mode, Objekt im Viewport, Eintrag im Outliner.</figcaption>
+    </figure>
+
+    <p class="step__desc">Man wählt ein neues Element als das aktive Element aus, indem man innerhalb der momentanen Auswahl die Shift-Taste gedrückt hält.</p>
+    <p class="step__desc">Wenn man alle Objekte gleichermaßen anpassen möchte, muss man die Alt-Taste gedrückt halten. Das funktioniert für viele Blender-Buttons, aber nicht für alle.</p>
+
+    <div class="callout">
+      <b>Hinweis:</b> Die Modifier müssen alle den gleichen Namen besitzen, wenn man die Alt-Taste benutzen möchte.
+    </div>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Innerhalb einer Auswahl ein neues aktives Element auswählen</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Ändert die Werte in diesem Block für alle ausgewählten Objekte</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Verschiebt die Werte in diesem Block gleichmäßig für alle ausgewählten Objekte</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/active-object-01-alt-klick-aendert-einen-wert-fuer.gif" alt="Animation: Alt-Klick ändert einen Wert für alle ausgewählten Objekte gleichzeitig">
+      </div>
+    </div>
+
+    <p class="step__desc">Man kann auch noch weitere Eigenschaften vom aktiven Objekt auf andere übertragen, z.B. Materialien, Modifier oder auch alle Transforms gleichzeitig.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">L</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Verlinkungsmenü</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/Copy-Link.gif" alt="Animation: Mit Strg+L wird das Verlinkungsmenü geöffnet und eine Eigenschaft auf die ausgewählten Objekte übertragen">
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/transform_copytoselected.gif" alt="Animation: Transform-Werte werden mit Copy to Selected auf die anderen ausgewählten Objekte übertragen">
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ---------- Seite: Apply Transforms ---------- -->
+<section id="apply-transforms" class="page">
+  <div class="eyebrow">Apply Transforms</div>
+  <h1 class="title">Werte in Geometrie überführen</h1>
+  <p class="subtitle">Transform-Werte lassen sich jederzeit fest in die Geometrie schreiben — das hat spürbare Auswirkungen auf viele andere Bereiche.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-apply-transforms"><span class="idx">01</span> Apply Transforms</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-apply-transforms">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Apply Transforms</h2>
+    <p class="step__desc">Grundsätzlich können alle Transforms (Position, Rotation und Skalierung) – angewendet werden <span class="ui-tag">Apply</span>.</p>
+    <p class="step__desc">Dabei werden die aktuellen Werte fest in die Geometrie des Objekts geschrieben. Die Transform-Werte werden anschließend auf <b>0, 0, 0</b> (Position/Rotation) bzw. <b>1, 1, 1</b> (Skalierung) zurückgesetzt.</p>
+    <p class="step__desc">In der Praxis wird am häufigsten die Skalierung, etwas seltener die Rotation und nur selten die Position angewendet. Statt die Position anzuwenden, wird häufig der <a class="inline-link" href="#origin">Origin</a> direkt verschoben.</p>
+
+    <div class="step__label">1. Form &amp; Werte</div>
+    <p class="step__desc">Ein 3D-Objekt besteht aus seiner reinen Form (Geometrie) und seinen Transform-Werten, die im Objekt-Modus gespeichert werden.</p>
+
+    <figure class="ref-figure" style="max-width:900px;">
+      <img decoding="async" width="2419" height="1290" src="assets/ApplyScale_Infografik_03_01.jpg" alt="Infografik: Ein Objekt setzt sich aus Geometry (Vertices, Edges, Faces) und Transforms (Location, Rotation, Scale) zusammen">
+    </figure>
+
+    <div class="step__label">2. Transform</div>
+    <p class="step__desc">Wenn man beispielsweise im Objekt-Modus skaliert, ändert sich nicht die Geometrie, sondern es ändern sich nur die Skalierungswerte.</p>
+    <p class="step__desc">In diesem Beispiel bleibt die Geometrie des Würfels erhalten, obwohl er optisch wie ein flacher Quader aussieht. Diese Geometrie wird in Blender als <b>Mesh Data</b> gespeichert.</p>
+    <p class="step__desc">Besonders die Skalierung hat Auswirkungen auf viele andere Bereiche innerhalb von Blender, z.B. können Physiksimulationen doppelt so schnell ablaufen, UVs nicht richtig ausgegeben werden und Sculpting-Brushes verzerrt werden.</p>
+
+    <figure class="ref-figure" style="max-width:900px;">
+      <img decoding="async" width="2419" height="2685" src="assets/ApplyScale_Infografik_03_02.jpg" alt="Infografik: Skalieren im Objekt-Modus ändert nur die Skalierungswerte, die Mesh Data bleibt unverändert — mit Auswirkungen auf Physics, Texturing und die Modi">
+    </figure>
+
+    <div class="step__label">3. Apply Transforms</div>
+    <p class="step__desc">Dieser Vorgang schreibt die <em>Werte</em> in die <em>Geometrie</em>.</p>
+
+    <figure class="ref-figure" style="max-width:900px;">
+      <img decoding="async" width="2419" height="1341" src="assets/ApplyScale_Infografik_03_03.jpg" alt="Infografik: Apply Transforms schreibt die Skalierungswerte fest in die Mesh Data, die Transform-Werte werden zurückgesetzt">
+    </figure>
+
+    <p class="step__desc">Auch wenn das Objekt erst einmal unverändert aussieht, so ist für Blender erst jetzt aus dem Würfel ein flacher Quader geworden.</p>
+
+    <figure class="ref-figure" style="max-width:640px;">
+      <img decoding="async" width="1052" height="686" src="assets/ApplyScale_Infografik_03_04.jpg" alt="Vergleich: der ursprüngliche Würfel neben dem angewendeten, flachen Quader">
+    </figure>
+
+    <p class="step__desc" style="margin-top:32px;">Mit uniformer Skalierung (z. B. 1,1,1 oder 2,2,2) verhalten sich dieselben Modi wieder wie meistens gewünscht.</p>
+
+    <div class="substep">
+<div class="subtab-buttons">
+      <button class="subtab-btn active" data-subtab="apply-yes">Apply</button>
+      <button class="subtab-btn" data-subtab="apply-no">Kein Apply</button>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="apply-yes"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">A</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Apply Transforms Menü</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/apply-transforms-02-mit-uniformer-skalierung-verhalten-sich-edit.gif" alt="Animation: Mit uniformer Skalierung verhalten sich Edit Mode, Sculpt Mode und Modifier wie gewünscht">
+        </div>
+        <div class="gif-caption">
+          <span class="gif-caption__text">Mit uniformer Skalierung (z. B. 1,1,1 oder 2,2,2) verhalten sich dieselben Modi wieder wie meistens gewünscht.</span>
+        </div>
+      </div>
+    </div>
+    <div class="subtab-panel" data-subtab-panel="apply-no" style="display:none;"><div class="hotkey-list">
+        <div class="hotkey-row"><span class="hkt-dash">-</span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/apply-transforms-03-ohne-apply-scale-verhalten-sich-edit.gif" alt="Animation: Ohne Apply Scale verhalten sich Edit Mode, Sculpt Mode und Modifier ungewöhnlich">
+        </div>
+        <div class="gif-caption">
+          <span class="gif-caption__text">Verzichtet man auf "Apply Scale", zeigen sich die Anomalien, beispielsweise unregelmäßige Kantenlängen beim Inset im <em>Edit Mode</em>, langgezogene Brushes im <em>Sculpt Mode</em> und unregelmäßige Kantenlängen im <em>Bevel-Modifier</em>.</span>
+        </div>
+      </div>
+    </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ---------- Seite: Origin ---------- -->
+<section id="origin" class="page">
+  <div class="eyebrow">Origin</div>
+  <h1 class="title">Origin verschieben</h1>
+  <p class="subtitle">Der Origin ist wichtig für Modifier und häufig der Mittelpunkt einer Bewegung. Hier drei Methoden, wie man ihn verschieben kann.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-origin-editmode"><span class="idx">01</span> Inhalt im Edit Mode verschieben</a>
+      <div class="stack-group">
+        <a class="stack-item" href="#step-origin-objectmenu"><span class="idx">02</span> Objekt Menü</a>
+        <div class="stack-subitems">
+          <a class="stack-subitem" href="#substep-origin-mitte">Origin zum Mittelpunkt verschieben</a>
+          <a class="stack-subitem" href="#substep-origin-3dcursor">Origin zum 3D-Cursor verschieben</a>
+        </div>
+      </div>
+      <a class="stack-item" href="#step-origin-direkt"><span class="idx">03</span> Origin direkt bewegen</a>
+    </div>
+  </div>
+
+  <div class="step" id="step-origin-editmode">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Inhalt im Edit Mode verschieben</h2>
+    <p class="step__desc">Freies Bewegen der Elemente im Edit Mode. Das bewegt den Origin relativ zum Inhalt — Nachteil: wenig Kontrolle.</p>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/origin-01-der-origin-verschiebt-sich-relativ-zum.gif" alt="Animation: Der Origin verschiebt sich relativ zum Inhalt, wenn Elemente im Edit Mode bewegt werden">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-origin-objectmenu">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Objekt Menü</h2>
+    <p class="step__desc">Das Objekt-Menü bietet zwei Wege: eine automatisierte Option und eine etwas individuellere Variante.</p>
+
+    <div class="substep" id="substep-origin-mitte">
+      <div class="step__label">Origin zum Mittelpunkt verschieben</div>
+      <p class="step__desc">Verschiebt Origin zum Mittelpunkt aller Elemente des Objekts.</p>
+      <div class="callout">
+        Wenn es schnell gehen soll und der Origin einfach zu weit weggerutscht ist.
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/origin-02-origin-wird-ueber-das-objekt-menue.gif" alt="Animation: Origin wird über das Objekt-Menü zum Mittelpunkt verschoben">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-origin-3dcursor">
+      <div class="step__label">Origin zum 3D-Cursor verschieben</div>
+      <p class="step__desc">Verschiebt den Origin zum 3D-Cursor.</p>
+
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">3D-Cursor bewegen</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="icon-chip" title="Rechtsklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" d="M80,33h29L94,7Z"/><path fill="var(--accent)" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">kombiniert 3D-Cursor mit Snapping</span></span></div>
+      </div>
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/origin-03-3d-cursor-wird-mit-shift-rechtsklick.gif" alt="Animation: 3D-Cursor wird mit Shift+Rechtsklick bewegt">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-origin-direkt">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Origin direkt bewegen</h2>
+    <p class="step__desc">Option "Transform Affect Only Origin" auswählen. Auch hier kann mit Snapping gearbeitet werden.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Origin frei bewegen</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">G</span> + <span class="keycap" style="width:auto; padding:0 8px;">Strg</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Origin wird mit Snapping bewegt</span></span></div>
+    </div>
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/origin-04-origin-wird-mit-transform-affect-only.gif" alt="Animation: Origin wird mit Transform Affect Only Origin direkt bewegt">
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section id="edit" class="page">
+  <div class="eyebrow">Edit Mode</div>
+  <h1 class="title">Vertices, Edges, Faces</h1>
+  <p class="subtitle">Im Edit Mode wird nicht das Objekt, sondern seine Geometrie bearbeitet.</p>
+
+  <p class="placeholder-note">Inhalt für Edit Mode folgt — Step-Blöcke wie auf der Object-Mode-Seite hier einfügen.</p>
+</section>
+
+<!-- ---------- Seite 3: Modifier ---------- -->
+<section id="modifier" class="page">
+  <div class="eyebrow">Modifier</div>
+  <h1 class="title">Modifier Stack</h1>
+  <p class="subtitle">Nicht-destruktive Operationen, die sich auf das Objekt stapeln lassen.</p>
+
+  <div class="chapter-overview">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-mod-subdivision"><span class="idx">01</span> Subdivision</a>
+      <div class="stack-item"><span class="idx">02</span> Mirror</div>
+      <div class="stack-item"><span class="idx">03</span> Bevel</div>
+    </div>
+  </div>
+
+  <div class="step" id="step-mod-subdivision">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Subdivision Surface</h2>
+    <p class="step__desc">Das Modeling mit dem Subdivision Surface wird häufig genutzt, um glatte und abgerundete Oberflächen zu erzeugen, während man mit nur wenigen Flächen arbeitet.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">1</span><span class="slash">/</span><span class="keycap">2</span><span class="slash">/</span><span class="keycap">3</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Subdivision-Level im Viewport direkt setzen</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" class="contain" src="assets/modifier-01-subdivision-surface-modifier-wird-auf-ein.gif" alt="Animation: Subdivision Surface Modifier wird auf ein Objekt angewendet">
+      </div>
+    </div>
+
+    <div class="substep">
+      <div class="step__label">Crease</div>
+      <p class="step__desc" style="margin-bottom:16px;">Ausgewählte Kanten und Punkte können entweder mit <span class="ui-tag">Edge Crease</span> oder <span class="ui-tag">Vertex Crease</span> scharf gezeichnet werden.<br>Man kann sich das Modell mit <span class="icon-chip" title="Rechtsklick" style="width:26px; height:26px; vertical-align:middle;"><svg viewBox="0 0 186 186" width="20" height="20"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span> → <span class="ui-tag">Shade Auto Smooth</span> mit glatter Oberfläche anzeigen lassen.</p>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/modifier-02-kanten-und-punkte-werden-mit-edge.gif" alt="Animation: Kanten und Punkte werden mit Edge Crease bzw. Vertex Crease scharf gezeichnet">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep">
+      <div class="step__label">Artefakte</div>
+      <p class="step__desc" style="margin-bottom:16px;">Triangles und Ngons können beim Subdivision Modeling zu unerwünschten Artefakten führen, wenn sie verformt werden. Am besten möglichst mit Quads modellieren oder solche Flächen gerade halten.</p>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" class="contain" src="assets/modifier-03-artefakte-durch-triangles-ngons-beim-subdivision.gif" alt="Animation: Artefakte durch Triangles/Ngons beim Subdivision Modeling">
+        </div>
+      </div>
+
+      <figure class="ref-figure">
+        <img decoding="async" width="742" height="390" src="assets/modifier-04-triangle-3-vertices-quad-4-vertices.png" alt="Triangle (3 Vertices), Quad (4 Vertices) und NGon (5+ Vertices) im Vergleich">
+        <figcaption>Triangles (3 Punkte) und NGons (5+ Punkte) sind anfällig für Artefakte beim Subdivision Modeling, Quads (4 Punkte) nicht.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <p class="placeholder-note">Inhalt für Mirror und Bevel folgt.</p>
+</section>
+
+<script>
+  // Steps in Dokumentreihenfolge durchzählen und abwechselnd einfärben.
+  // Substeps zählen nur dann als eigener Abschnitt mit, wenn es innerhalb
+  // eines Steps mehrere davon gibt (= echte Unterlinks). Gibt es nur eins,
+  // ist es rein strukturell (z.B. nur zum Halten der Tabs) und erbt die
+  // Farbe seines Steps, statt eine eigene Trennung zu erzeugen.
+  document.querySelectorAll('.page').forEach(page => {
+    let i = 0;
+    const steps = page.querySelectorAll('.step');
+    steps.forEach(step => {
+      step.classList.remove('stripe-odd', 'stripe-even');
+      step.classList.add(i % 2 === 0 ? 'stripe-odd' : 'stripe-even');
+      i++;
+
+      const substeps = step.querySelectorAll(':scope > .substep');
+      substeps.forEach(sub => sub.classList.remove('stripe-odd', 'stripe-even', 'color-split-start'));
+      const descEl = step.querySelector(':scope > .step__desc');
+      if (descEl) descEl.classList.remove('has-color-split');
+
+      step.classList.remove('no-bottom-pad');
+
+      if (substeps.length > 1) {
+        step.classList.add('no-bottom-pad');
+        if (descEl) descEl.classList.add('has-color-split');
+        substeps[0].classList.add('color-split-start');
+
+        substeps.forEach((sub, idx) => {
+          sub.classList.add(i % 2 === 0 ? 'stripe-odd' : 'stripe-even');
+          i++;
+
+          const oldMarker = sub.querySelector(':scope > .substep-marker');
+          if (oldMarker) oldMarker.remove();
+
+          const marker = document.createElement('div');
+          marker.className = 'substep-marker';
+          marker.innerHTML = `<span class="substep-marker__dot"></span><span class="substep-marker__line"></span>`;
+          sub.insertBefore(marker, sub.firstChild);
+        });
+      }
+    });
+  });
+
+  function restartGifs(container) {
+    // ACHTUNG: diese Funktion wird nicht nur beim Seitenwechsel aufgerufen,
+    // sondern auch beim Umschalten eines Untertabs - dann ist container nur das
+    // kleine Panel. Abgebaut werden darf trotzdem immer nur, was auf einer
+    // ANDEREN SEITE liegt. Vorher hat ein Klick auf einen Untertab saemtliche
+    // Spieler der gerade offenen Seite mitgerissen: Pause-Knopf weg, zurueck
+    // zum nackten <img>.
+    const seite = (container.closest && container.closest('.page')) || container;
+    Array.from(gifPlayers.keys()).forEach(st => { if (!seite.contains(st)) destroyPlayer(st); });
+    // Im neu geoeffneten Bereich laufen die GIFs wieder von vorn
+    Array.from(gifPlayers.keys()).forEach(st => {
+      if (container.contains(st)) { playerRestart(gifPlayers.get(st)); updatePlayBtn(st); }
+    });
+    // Nur echte, gerade sichtbare GIFs neu starten — statische
+    // Referenzbilder (JPG/PNG) und GIFs in ausgeblendeten Subtab-Panels
+    // brauchen das nicht und würden nur unnötig Arbeit verursachen.
+    //
+    // WICHTIG: Früher wurde hier per cloneNode()+replaceWith() ein vollständig
+    // neues <img>-Element erzeugt. Das erzeugt bei jedem Seitenwechsel neue
+    // Bild-Objekte, ohne dass die alten zuverlässig sofort freigegeben
+    // werden — bei vielen Multi-MB-GIFs summiert sich das über eine längere
+    // Sitzung zu spürbarem Speicherdruck auf, der Sprungziele unzuverlässig
+    // machte. Jetzt wird stattdessen dasselbe Element wiederverwendet: das
+    // kurze Zurücksetzen von src auf einen leeren String und zurück auf die
+    // ursprüngliche Quelle startet die GIF-Animation genauso neu, ohne neue
+    // Elemente/Bild-Daten anzuhäufen.
+    // Erkennt eingebettete GIFs (data:image/gif...) UND ausgelagerte Dateien
+    // (assets/....gif) — je nach Ausgabeform der Seite.
+    container.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src') || '';
+      if (!(src.startsWith('data:image/gif') || /\.gif(\?|#|$)/i.test(src))) return;
+      if (img.offsetParent === null) return;
+      const clone = img.cloneNode(true);
+      img.replaceWith(clone);
+      if (clone.decode) clone.decode().catch(() => {});
+    });
+  }
+
+  // ---------- GIF-Steuerung: von vorn abspielen / Pause ----------
+  // Zwei Dinge stehen dem im Weg, beide nachgemessen statt vermutet:
+  //   1. Ein GIF laesst sich per DOM nicht anhalten - es gibt keinen Griff dafuer.
+  //   2. canvas.drawImage() liefert bei einem animierten <img> in Chromium IMMER
+  //      das ERSTE Einzelbild, nicht das gerade sichtbare. Ein so erzeugtes
+  //      "Standbild" zeigte deshalb den Anfang statt der aktuellen Stelle.
+  // Loesung: sichtbare GIFs spielen wir selbst auf einem <canvas> ab. Die
+  // Einzelbilder kommen einzeln aus dem ImageDecoder (WebCodecs, liefert fertig
+  // zusammengesetzte Vollbilder samt Anzeigedauer), den Takt gibt
+  // requestAnimationFrame. Damit halten Pause, Weiter und Neustart genau das,
+  // was sie versprechen - Pause friert exakt das Bild ein, das man gerade sieht.
+  //
+  // Kommt der Decoder nicht an die Bilddaten, bleibt es beim normalen <img> und
+  // es gibt nur den Neustart-Knopf (der auch ohne Decoder zuverlaessig
+  // funktioniert). Das ist genau dann der Fall, wenn die Seite per Doppelklick
+  // ueber file:// geoeffnet wird: Browser verbieten dort fetch() auf lokale
+  // Dateien. Ueber einen Webserver - also auch in Moodle - greift der Decoder.
+  const HAS_IMAGE_DECODER = typeof window.ImageDecoder !== 'undefined';
+  const gifPlayers = new Map(); // .viewport__stage -> Spieler
+
+  const ICON_RESTART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.9-6.4"/><path d="M3 4.5v5h5"/></svg>';
+  const ICON_PAUSE   = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="3.8" height="14" rx="1.2"/><rect x="13.7" y="5" width="3.8" height="14" rx="1.2"/></svg>';
+  const ICON_PLAY    = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6L19 12Z"/></svg>';
+
+  function gifSrcOf(img) {
+    return (img && (img.getAttribute('src') || img.dataset.gifSrc)) || '';
+  }
+
+  function isGifImg(img) {
+    const src = gifSrcOf(img);
+    return src.startsWith('data:image/gif') || /\.gif(\?|#|$)/i.test(src);
+  }
+
+  function updatePlayBtn(stage) {
+    const p = gifPlayers.get(stage);
+    const btn = stage.querySelector('.gif-btn--play');
+    if (!btn) return;
+    if (!p) { btn.hidden = true; stage.classList.remove('is-paused'); return; }
+    btn.hidden = false;
+    const paused = !!p.userPaused;
+    btn.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+    btn.title = paused ? 'Abspielen' : 'Pause';
+    btn.setAttribute('aria-label', btn.title);
+    stage.classList.toggle('is-paused', paused);
+  }
+
+  async function showFrame(p, index) {
+    const { image } = await p.dec.decode({ frameIndex: index });
+    if (p.canvas.width !== image.displayWidth || p.canvas.height !== image.displayHeight) {
+      p.canvas.width = image.displayWidth;
+      p.canvas.height = image.displayHeight;
+    }
+    p.ctx.drawImage(image, 0, 0);
+    p.dur = Math.max(20, (image.duration || 100000) / 1000);
+    image.close();
+    p.idx = index;
+    if (p.fill) p.fill.style.width = (((index + 1) / p.count) * 100) + '%';
+  }
+
+
+  // Die Schleife darf unter keinen Umstaenden in einer Sackgasse enden. Frueher
+  // setzte ein einziger fehlgeschlagener Dekodier-Versuch p.dead - das GIF stand
+  // dann stumm fuer immer still. Jetzt gilt: einzelne Fehler fuehren zum
+  // Neuanfang bei Bild 1, und erst nach mehreren Fehlern in Folge wird auf das
+  // normale <img> zurueckgeschaltet (das laeuft ohne Pause-Knopf, aber es laeuft).
+  // Zusaetzlich eine Notbremse gegen eine haengende Dekodierung: bleibt die
+  // Sperre laenger als drei Sekunden gesetzt, wird sie geloest.
+  function startLoop(p) {
+    cancelAnimationFrame(p.raf);
+    p.nextAt = performance.now() + p.dur;
+    p.lastOk = performance.now();
+    p.errors = 0;
+    const step = (now) => {
+      if (p.dead || !p.playing) return;
+
+      if (p.busy && now - p.lastOk > 3000) { p.busy = false; p.lastOk = now; }
+
+      if (!p.busy && now >= p.nextAt) {
+        p.busy = true;
+        showFrame(p, (p.idx + 1) % p.count)
+          .then(() => {
+            // Naechster Wechsel wird an den vorherigen Takt angehaengt, nicht an
+            // "jetzt" - sonst kaeme die Dekodierzeit bei jedem Bild oben drauf
+            // und das GIF liefe spuerbar zu langsam (gemessen: rund ein Viertel).
+            p.nextAt += p.dur;
+            const jetzt = performance.now();
+            if (jetzt - p.nextAt > 500) p.nextAt = jetzt + p.dur; // weit hinterher: neu ansetzen
+            p.lastOk = jetzt;
+            p.errors = 0;
+          })
+          .catch(() => {
+            p.lastOk = performance.now();
+            p.errors++;
+            if (p.errors >= 3) destroyPlayer(p.stage);
+            else { p.idx = -1; p.nextAt = performance.now(); } // naechster Versuch bei Bild 1
+          })
+          .then(() => { p.busy = false; });
+      }
+      p.raf = requestAnimationFrame(step);
+    };
+    p.raf = requestAnimationFrame(step);
+  }
+
+  function playerPause(p, byUser) {
+    if (byUser) p.userPaused = true;
+    p.playing = false;
+    cancelAnimationFrame(p.raf);
+  }
+
+  function playerPlay(p, byUser) {
+    if (byUser) p.userPaused = false;
+    if (p.dead || p.playing || p.userPaused) return;
+    p.playing = true;
+    startLoop(p);
+  }
+
+  function playerRestart(p) {
+    p.userPaused = false;
+    cancelAnimationFrame(p.raf);
+    p.playing = true;
+    showFrame(p, 0).then(() => startLoop(p)).catch(() => { p.dead = true; });
+  }
+
+  async function buildPlayer(stage) {
+    const img = stage.querySelector('img');
+    const src = gifSrcOf(img);
+    if (!HAS_IMAGE_DECODER || !src) throw new Error('kein Decoder');
+
+    const data = await (await fetch(src)).arrayBuffer();
+    const dec = new ImageDecoder({ data, type: 'image/gif' });
+    await dec.tracks.ready;
+    // WICHTIG: nach tracks.ready steht frameCount noch NICHT fest - gemessen kam
+    // dort haeufig 1 zurueck, waehrend die restlichen Bilder noch eingelesen
+    // wurden. Die Pruefung "weniger als 2 Bilder" hat den Spieler dann verworfen
+    // (Pause-Knopf verschwand, es blieb beim normalen <img>), und ein zu kleiner
+    // frameCount haette die Schleife viel zu frueh umbrechen lassen.
+    // Erst dec.completed garantiert die vollstaendige Bildanzahl.
+    await dec.completed;
+    const track = dec.tracks.selectedTrack;
+    if (!track || !track.animated || track.frameCount < 2) throw new Error('nicht animiert');
+
+    const canvas = document.createElement('canvas');
+    canvas.className = img.className; // erbt contain / zoom-crop / crop-right
+    const p = {
+      stage, img, canvas, ctx: canvas.getContext('2d'), dec,
+      count: track.frameCount, idx: -1, dur: 100,
+      playing: false, userPaused: false, busy: false, raf: 0, dead: false, nextAt: 0,
+    };
+    gifPlayers.set(stage, p);
+
+    await showFrame(p, 0);
+    img.dataset.gifSrc = src;
+    img.removeAttribute('src'); // Browser-Animation anhalten - ab jetzt zeichnen wir
+    img.style.display = 'none';
+    stage.insertBefore(canvas, stage.firstChild);
+
+    const bar = document.createElement('div');
+    bar.className = 'gif-progress';
+    bar.innerHTML = '<div class="gif-progress__track"><div class="gif-progress__fill"></div></div>';
+    stage.appendChild(bar);
+    p.bar = bar;
+    p.fill = bar.querySelector('.gif-progress__fill');
+
+    p.playing = true;
+    startLoop(p);
+    updatePlayBtn(stage);
+    return p;
+  }
+
+  // Ein misslungener Aufbau ist nur dann endgueltig, wenn die Datei wirklich
+  // keine Animation ist. Alles andere (Netz, Decoder) darf spaeter nochmal
+  // versucht werden - sonst bliebe ein GIF fuer den Rest des Besuchs ohne
+  // Pause-Knopf, obwohl der naechste Versuch geklappt haette.
+  function markFailed(stage, err) {
+    gifPlayers.delete(stage);
+    if (err && err.message === 'nicht animiert') stage.dataset.gifDead = '1';
+    else delete stage.dataset.gifTried;
+    updatePlayBtn(stage);
+  }
+
+  function destroyPlayer(stage) {
+    const p = gifPlayers.get(stage);
+    if (!p) return;
+    p.dead = true;
+    cancelAnimationFrame(p.raf);
+    try { p.dec.close(); } catch (e) {}
+    p.canvas.remove();
+    if (p.bar) p.bar.remove();
+    p.img.style.display = '';
+    if (p.img.dataset.gifSrc) p.img.setAttribute('src', p.img.dataset.gifSrc);
+    gifPlayers.delete(stage);
+    delete stage.dataset.gifTried; // beim naechsten Sichtbarwerden neu aufbauen
+    updatePlayBtn(stage);
+  }
+
+  // Ohne Decoder: Neustart ueber einen Klon des <img>. Nachgemessen - das ist die
+  // einzige Variante, die die Schleife wirklich wieder bei Bild 1 beginnen laesst.
+  function fallbackRestart(stage) {
+    const img = stage.querySelector('img');
+    if (!img || !img.getAttribute('src')) return;
+    const clone = img.cloneNode(true);
+    img.replaceWith(clone);
+    if (clone.decode) clone.decode().catch(() => {});
+  }
+
+  function addGifControls(stage) {
+    if (stage.querySelector('.gif-controls')) return;
+    if (!isGifImg(stage.querySelector('img'))) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'gif-controls';
+
+    const mk = (cls, icon, label, onClick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'gif-btn ' + cls;
+      b.innerHTML = icon;
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); onClick(); });
+      return b;
+    };
+
+    wrap.appendChild(mk('gif-btn--restart', ICON_RESTART, 'Von vorn abspielen', () => {
+      const p = gifPlayers.get(stage);
+      if (p) { playerRestart(p); updatePlayBtn(stage); return; }
+      // Kein Spieler da? Dann ist frueher einer schiefgegangen oder gar nicht
+      // erst aufgebaut worden. Der Neustart-Knopf ist der natuerliche Moment,
+      // das nachzuholen - der Aufbau beginnt ohnehin bei Bild 1, und der
+      // Pause-Knopf kommt damit zurueck.
+      if (HAS_IMAGE_DECODER && !stage.dataset.gifDead) {
+        delete stage.dataset.gifTried;
+        buildPlayer(stage)
+          .then(() => updatePlayBtn(stage))
+          .catch((e) => { markFailed(stage, e); fallbackRestart(stage); });
+        return;
+      }
+      fallbackRestart(stage);
+    }));
+
+    const play = mk('gif-btn--play', ICON_PAUSE, 'Pause', () => {
+      const p = gifPlayers.get(stage);
+      if (!p) return;
+      if (p.userPaused) playerPlay(p, true); else playerPause(p, true);
+      updatePlayBtn(stage);
+    });
+    play.hidden = true; // erscheint erst, wenn der Decoder wirklich laeuft
+    wrap.appendChild(play);
+
+    stage.appendChild(wrap);
+  }
+
+  document.querySelectorAll('.viewport__stage').forEach(addGifControls);
+
+  // Spieler erst aufbauen, wenn ein GIF ins Sichtfeld kommt - und ausserhalb
+  // pausieren, damit nie mehr als noetig dekodiert wird.
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        const stage = en.target;
+        const p = gifPlayers.get(stage);
+        if (en.isIntersecting) {
+          if (p) playerPlay(p, false);
+          else if (!stage.dataset.gifTried) {
+            stage.dataset.gifTried = '1';
+            buildPlayer(stage).catch((e) => markFailed(stage, e));
+          }
+        } else if (p) {
+          playerPause(p, false);
+        }
+      });
+    }, { rootMargin: '200px' });
+    document.querySelectorAll('.viewport__stage').forEach((st) => {
+      if (st.querySelector('.gif-controls')) obs.observe(st);
+    });
+  }
+
+  const pages = document.querySelectorAll('.page');
+  const navButtons = document.querySelectorAll('.sidebar__item');
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.page;
+      if (!target) return;
+
+      // Gruppen-Kopf und der Unterpunkt, der auf dieselbe Seite zeigt, werden
+      // gemeinsam als aktiv markiert
+      navButtons.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      navButtons.forEach(b => {
+        if (b.dataset.page === target) { b.classList.add('active'); b.setAttribute('aria-selected','true'); }
+      });
+
+      pages.forEach(p => p.classList.remove('active'));
+      const page = document.getElementById(target);
+      if (!page) return;
+      page.classList.add('active');
+      window.scrollTo({top:0, behavior:'instant'});
+
+      // GIF-Neustart erst im nächsten Frame, damit das teure Klonen
+      // mehrerer Bilder nicht mit einer unmittelbar folgenden Aktion
+      // (z.B. Klick auf einen Unterlink) um den Haupt-Thread konkurriert.
+      requestAnimationFrame(() => restartGifs(page));
+
+      // Mobil: nach der Auswahl die Seitenleiste wieder schliessen
+      if (document.body.classList.contains('sidebar-mobile-open')) {
+        animateMobileToggle(false);
+      }
+    });
+  });
+
+  // Sub-Tabs: Auswahl hinzufügen / abziehen
+  document.querySelectorAll('.subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const group = btn.closest('.substep');
+      const target = btn.dataset.subtab;
+
+      group.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      group.querySelectorAll('.subtab-panel').forEach(p => {
+        p.style.display = (p.dataset.subtabPanel === target) ? '' : 'none';
+      });
+
+      const activePanel = group.querySelector(`.subtab-panel[data-subtab-panel="${target}"]`);
+      if (activePanel) restartGifs(activePanel);
+    });
+  });
+
+  // Kapitelübersicht-Links: einheitlicher Scroll-Versatz auf allen Seiten.
+  // Links mit Unterpunkten: auf Touch-Geräten klappt der erste Tap nur auf,
+  // erst ein zweiter Tap (oder ein Link ohne Unterpunkte) springt.
+  const SCROLL_OFFSET = 56;
+  let pendingJumpCheck = null; // verhindert, dass sich überlappende Sprung-Nachkorrekturen gegenseitig überschreiben
+  let jumpScrollLock = false; // verhindert, dass eine Kapitelgruppe während eines aktiven Sprungs einklappt und den Inhalt darunter verschiebt (Bounce-Effekt)
+  async function jumpTo(link) {
+    jumpScrollLock = true;
+    setTimeout(() => { jumpScrollLock = false; }, 1200);
+    const id = link.getAttribute('href').slice(1);
+    const target = document.getElementById(id);
+    if (!target) return;
+    // Nicht den Container selbst anpeilen, sondern die Trenn-Linie darin
+    // (.step-divider bei Steps, .substep-marker bei Substeps) — die hat
+    // per CSS scroll-margin-top:56px, damit sie exakt an der Navbar-
+    // Unterkante anstößt.
+    const divider = target.querySelector(':scope > .step-divider, :scope > .substep-marker') || target;
+
+    // Vor dem Sprung auf alle sichtbaren Bilder der Zielseite warten, bis
+    // sie fertig dekodiert sind — ein Seitenwechsel klont GIFs neu
+    // (restartGifs), deren Dekodierung läuft asynchron weiter und kann
+    // die Layout-Höhe noch verändern. Erst danach ist die Position, die
+    // scrollIntoView() berechnet, verlässlich richtig.
+    const activePage = target.closest('.page');
+    const visibleImgs = activePage
+      ? Array.from(activePage.querySelectorAll('img')).filter(img => img.offsetParent !== null)
+      : [];
+    await Promise.all(visibleImgs.map(img => img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    // scrollIntoView() statt eigener Pixel-Berechnung: Browser-Standard,
+    // respektiert scroll-margin-top nativ und arbeitet mit dem jeweiligen
+    // nativen Scroll-Anchoring zusammen statt dagegen — einheitlich über
+    // Chrome, Firefox und Safari hinweg, keine eigene Nachkorrektur nötig.
+    divider.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    // Schlanke Absicherung: einmal nachprüfen, ob die Trenn-Linie wirklich
+    // an der Navbar anliegt, und bei größerer Abweichung (>4px) einmal
+    // nachjustieren. Kein Dauer-Polling mehr, nur ein einziger Check —
+    // fängt Restfälle ab, in denen selbst das Decode-Warten nicht
+    // ausgereicht hat (z. B. auf stärker ausgelasteten Maschinen).
+    // Eine zuvor noch ausstehende Prüfung (von einem vorherigen, schnell
+    // gefolgten Klick) wird verworfen, damit sich zwei überlappende
+    // Nachkorrekturen nicht gegenseitig auf das falsche Ziel überschreiben.
+    if (pendingJumpCheck) clearTimeout(pendingJumpCheck);
+    pendingJumpCheck = setTimeout(() => {
+      const diff = divider.getBoundingClientRect().top - SCROLL_OFFSET;
+      if (Math.abs(diff) > 4) {
+        divider.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+      pendingJumpCheck = null;
+    }, 700);
+  }
+
+  // Pfeil als echtes Element nachruesten (siehe .stack-item__arrow im CSS)
+  document.querySelectorAll('.stack-group > .stack-item').forEach(item => {
+    if (item.querySelector(':scope > .stack-item__arrow')) return;
+    const arrow = document.createElement('span');
+    arrow.className = 'stack-item__arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    item.appendChild(arrow);
+  });
+
+  document.querySelectorAll('.stack-item, .stack-subitem').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      const group = link.closest('.stack-group');
+      const isNarrow = window.matchMedia('(max-width:640px)').matches;
+      const onArrow = !!(e.target && e.target.closest && e.target.closest('.stack-item__arrow'));
+
+      // Schmale Breiten: Pfeil und Schrift machen UNTERSCHIEDLICHE Dinge —
+      // der Pfeil klappt die Unterlinks nur auf bzw. wieder zu (kein Sprung),
+      // ein Druck auf die Schrift springt sofort zum Kapitel.
+      if (group && link.classList.contains('stack-item') && isNarrow && onArrow) {
+        group.classList.toggle('expanded');
+        return;
+      }
+
+      jumpTo(link);
+    });
+  });
+
+  // Fließtext-Links (.inline-link) auf eine andere Seite: müssen zuerst
+  // per Klick auf den passenden Nav-Tab dorthin wechseln (die Zielseite
+  // ist sonst display:none und ein reiner Anker-Sprung würde ins Leere
+  // laufen), dann erst zum eigentlichen Ziel scrollen.
+  document.querySelectorAll('.inline-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const el = document.getElementById(id);
+      if (!el) return;
+      const targetPage = el.classList.contains('page') ? el : el.closest('.page');
+      if (!targetPage) return;
+      const btn = document.querySelector(`.sidebar__item[data-page="${targetPage.id}"]`);
+      if (btn) btn.click();
+      if (el !== targetPage) {
+        const divider = el.querySelector(':scope > .step-divider, :scope > .substep-marker') || el;
+        setTimeout(() => divider.scrollIntoView({behavior: 'smooth', block: 'start'}), 150);
+      }
+    });
+  });
+
+  // Aufklappen der Unterlinks JS-gesteuert statt rein per CSS :hover:
+  // Sofort beim Betreten aufklappen (kein Warten auf eine Maus-Transition),
+  // und beim Verlassen erst nach kurzer Verzögerung wieder einklappen —
+  // das verzeiht ungenaue Mausbewegungen auf dem Weg zum Unterlink und
+  // verhindert, dass ein Klick auf eine bereits wieder eingeklappte
+  // (und damit falsch positionierte) Stelle trifft.
+  document.querySelectorAll('.stack-group').forEach(group => {
+    let collapseTimer = null;
+    const hoverActive = () => window.matchMedia('(min-width:641px)').matches;
+    group.addEventListener('mouseenter', () => {
+      if (!hoverActive()) return; // auf schmalen Breiten steuert nur der Pfeil das Auf-/Zuklappen
+      clearTimeout(collapseTimer);
+      group.classList.add('expanded');
+    });
+    group.addEventListener('mouseleave', () => {
+      if (!hoverActive()) return;
+      if (jumpScrollLock) return; // während eines aktiven Sprungs nicht einklappen (verhindert Layout-Verschiebung mitten in der Scroll-Animation)
+      collapseTimer = setTimeout(() => group.classList.remove('expanded'), 400);
+    });
+  });
+
+
+  /* ---------- Sidebar-Navigation (aus preview_menu_sidebar_v38) ---------- */
+  const sidebarEl = document.querySelector('.sidebar');
+  const toggleDesktop = document.querySelector('.sidebar-toggle-desktop');
+  const resizeHandle = document.querySelector('.sidebar-resize-handle');
+  const contentEl = document.body;
+
+  const COLLAPSED_WIDTH = 56;
+  const EXPANDED_WIDTH = 232;
+
+  // Pfeil klappt die Rail auf/zu — einziger Zustandswechsel, auf allen Breiten gleich;
+  // die Sidebar verschwindet dabei nie komplett. Läuft über dieselbe animierte
+  // Übergabe wie beim Ziehen (Fade + Rotation), statt die Klasse abrupt umzuschalten.
+  toggleDesktop.addEventListener('click', () => {
+    animateSidebarToggle(!document.body.classList.contains('sidebar-collapsed'));
+  });
+
+  // Menülinie per Drag-and-Drop zwischen Rail und voller Breite hin- und herziehen,
+  // rastet beim Loslassen auf den näheren der beiden Zustände ein. Ein reiner Klick
+  // (ohne nennenswerte Bewegung) schaltet den Zustand stattdessen animiert um — genau
+  // wie der Pfeil, nicht abrupt. Pointer Events decken Maus, Touch und Stift einheitlich ab.
+  // Die Icon-Spalte sitzt inzwischen fest links (siehe CSS) und bewegt sich zwischen
+  // A und B nicht mehr — daher ist keine FLIP-Gleit-Logik für Icons mehr nötig.
+  let dragging = false;
+  let dragMoved = false;
+  let startX = 0;
+  let startWidth = EXPANDED_WIDTH;
+  let currentWidth = EXPANDED_WIDTH;
+  let dragWasCollapsed = false;
+  let dragIsMobile = false;
+  const CLICK_THRESHOLD = 4;
+
+  function isTouchMode() {
+    return window.matchMedia('(max-width:640px)').matches;
+  }
+
+  // Fade-Kurve, abhängig von der Zieh-Richtung:
+  // B -> A (aufklappen): schon bei 66% des Wegs voll sichtbar (statt erst am Ende)
+  // A -> B (einklappen): schon bei 66% des Wegs komplett unsichtbar (statt erst am Ende)
+  function dragFade(fraction, wasCollapsed) {
+    if (wasCollapsed) {
+      return Math.min(1, Math.max(0, fraction / 0.66));
+    }
+    return Math.min(1, Math.max(0, (fraction - 0.34) / 0.66));
+  }
+
+  // Pfeil-Rotation bewegt sich jetzt 1:1 mit dem Rand — kein Halten/Anhalten mehr,
+  // sondern exakt so schnell wie die Sidebar-Breite selbst sich ändert. Dieselbe
+  // Formel gilt für Desktop, die Trennerlinie und Mobil, damit die Animation überall
+  // gleich aussieht.
+  // Rotation bekommt ein eigenes, leichtes Ease-In-Ease-Out (räumlich, über den
+  // Fortschritt selbst — nicht über die Zeit) — dreht sich an den Enden (nahe
+  // Zustand A/B) langsamer, in der Mitte schneller. Position/Breite bleiben
+  // davon unberührt und folgen weiterhin 1:1 linear der Maus bzw. der Zeit.
+  function arrowRotationDeg(fraction) {
+    return 180 * (1 - easeInOutCubic(fraction));
+  }
+
+  // Beide Pfeil-Icons haben eine eigene CSS-Transition (für den Ruhezustand ohne
+  // JS-Steuerung). Während einer JS-Animation (Klick oder Ziehen) muss diese
+  // AUSGESCHALTET sein, sonst "hinkt" die Rotation der eigenen, gerade erst per
+  // JS gesetzten Zwischenposition ständig 0.32s hinterher, statt synchron mit dem
+  // Rand zu laufen.
+  function setArrowTransitionsEnabled(enabled) {
+    toggleDesktop.querySelector('.toggle-arrow-icon').style.transition = enabled ? '' : 'none';
+    toggleMini.querySelector('.toggle-arrow-icon').style.transition = enabled ? '' : 'none';
+    // Der Pfeil-BUTTON selbst (nicht nur das Icon) hat eine eigene left-Transition
+    // (für die horizontale Position auf der Menülinie). Die muss während der
+    // JS-Animation genauso stummgeschaltet werden, sonst löst der finale
+    // Klassenwechsel am Ende eine ZWEITE, eigene 0.32s-Bewegung aus, die sich wie
+    // ein Hängenbleiben/Nachziehen anfühlt, nachdem der Rest schon fertig ist.
+    toggleDesktop.style.transition = enabled ? '' : 'none';
+  }
+
+  // Der Pfeil-Button bleibt jetzt ausnahmslos über eine einzige CSS-Regel
+  // (right:6px, ohne Sonderfall für Zustand B) am rechten Rand — keine JS-
+  // Positionsverwaltung/kein Umschalten auf "Mitte" mehr nötig.
+
+  // Einziger Ort, der pro Frame Breite, Pfeil-Rotation und Fade aktualisiert —
+  // wird IDENTISCH von Klick-Animation UND echtem Ziehen (Desktop) genutzt,
+  // damit beide garantiert exakt gleich aussehen (keine zwei separate, potenziell
+  // abweichende Implementierungen mehr)
+  function applyDesktopFrame(fraction, wasCollapsed) {
+    sidebarEl.style.width = (COLLAPSED_WIDTH + fraction * (EXPANDED_WIDTH - COLLAPSED_WIDTH)) + 'px';
+    toggleDesktop.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(fraction)}deg)`;
+    sidebarEl.style.setProperty('--drag-fade', dragFade(fraction, wasCollapsed));
+  }
+
+  // Leichtes Ease-In-Ease-Out (Sinus-basiert, sanfter als eine Quad-Kurve) für die
+  // GESAMTE Auf-/Zuklappbewegung — gilt für Position UND (weil direkt an fraction
+  // gekoppelt) automatisch auch für die Pfeil-Rotation
+  // Stärkere Ease-In-Ease-Out-Kurve (Cubic statt Sinus) — deutlicher langsamer
+  // Start/Schluss und spürbar schnellere Mitte. Wird sowohl für die Bewegung
+  // (Breite/Position bei der Klick-Animation) als auch für die Pfeil-Rotation
+  // verwendet.
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  // Animierte Übergabe zwischen A und B (für Klick auf Pfeil ODER Trennerlinie) —
+  // nutzt dieselbe Fade-/Rotations-Logik wie ein echtes Ziehen, per requestAnimationFrame
+  // über die Zeit statt über die Mausposition gesteuert, damit Text/Farben sanft
+  // ein-/ausfaden statt abrupt zu erscheinen und alles zu verschieben.
+  // Neu aufgebaut als reine Spiegelung: es gibt nur EINE Formel für "wie weit
+  // offen" (fraction: 0 = Zustand B, 1 = Zustand A). Start- und Zielwert sind
+  // für A->B und B->A exakt dieselben zwei Zahlen (0 und 1), nur in
+  // vertauschter Reihenfolge — es gibt keinen separaten Code-Pfad pro
+  // Richtung, der sich verselbständigen könnte.
+  function animateSidebarToggle(willCollapse) {
+    const wasCollapsed = document.body.classList.contains('sidebar-collapsed');
+    if (wasCollapsed === willCollapse) return;
+
+    const fromFraction = wasCollapsed ? 0 : 1;
+    const toFraction = willCollapse ? 0 : 1;
+    const duration = 320;
+
+    sidebarEl.style.transition = 'none';
+    sidebarEl.classList.add('is-dragging');
+    setArrowTransitionsEnabled(false);
+
+    const t0 = performance.now();
+
+    function step(now) {
+      const elapsed = Math.min(1, (now - t0) / duration);
+      // Ease-In-Ease-Out für die automatische Klick-Animation (langsam-schnell-
+      // langsam) — im Unterschied zum Ziehen per Hand, wo die Bewegung weiterhin
+      // 1:1 linear der Maus folgt (dort gibt es kein "Zeit"-Konzept, das man
+      // easen könnte).
+      const eased = easeInOutCubic(elapsed);
+      const fraction = fromFraction + (toFraction - fromFraction) * eased;
+      applyDesktopFrame(fraction, wasCollapsed);
+
+      if (elapsed < 1) {
+        requestAnimationFrame(step);
+        return;
+      }
+
+      // Zielzustand exakt fixieren (unabhängig von Rundungsfehlern der letzten
+      // Frames) — identischer Aufräum-Code für beide Richtungen.
+      // ECHTE URSACHE DES RUCKLERS: Der Browser vergleicht beim Wieder-Aktivieren
+      // der Transition den ZULETZT GERENDERTEN Wert (den letzten Inline-Breite-
+      // Frame, z.B. 227.3px) mit dem neuen CSS-Wert (232px) und animiert genau
+      // diese Differenz — unabhängig davon, in welcher Reihenfolge Klasse und
+      // Inline-Breite gesetzt werden, weil beides im selben Skript-Durchlauf vor
+      // dem nächsten Paint passiert. Fix: Reflow erzwingen (offsetWidth lesen),
+      // WÄHREND die Transition noch deaktiviert ist — das schreibt den korrekten
+      // Wert fest, bevor die Transition überhaupt wieder aktiv wird, sodass es
+      // nichts mehr zum Nachanimieren gibt.
+      applyDesktopFrame(toFraction, wasCollapsed);
+      toggleDesktop.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(toFraction)}deg)`;
+      document.body.classList.toggle('sidebar-collapsed', willCollapse);
+      sidebarEl.style.width = '';
+      void sidebarEl.offsetWidth; // Reflow erzwingen, während Transition noch 'none' ist
+      sidebarEl.style.transition = '';
+      sidebarEl.style.removeProperty('--drag-fade');
+      setArrowTransitionsEnabled(true);
+      sidebarEl.classList.remove('is-dragging');
+      toggleDesktop.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  resizeHandle.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    dragMoved = false;
+    startX = e.clientX;
+    dragIsMobile = isTouchMode();
+    sidebarEl.style.transition = 'none';
+    sidebarEl.classList.add('is-dragging');
+    setArrowTransitionsEnabled(false);
+
+    if (dragIsMobile) {
+      // Mobil: Sidebar ist immer 232px breit und liegt entweder komplett off-canvas
+      // (Zustand C) oder voll sichtbar da — hier wird ihre Position (transform)
+      // live gezogen statt ihrer Breite.
+      dragWasCollapsed = !document.body.classList.contains('sidebar-mobile-open');
+      resizeHandle.setPointerCapture(e.pointerId);
+      return;
+    }
+
+    const wasCollapsed = document.body.classList.contains('sidebar-collapsed');
+    dragWasCollapsed = wasCollapsed;
+    startWidth = wasCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
+    currentWidth = startWidth;
+
+    resizeHandle.setPointerCapture(e.pointerId);
+  });
+
+  resizeHandle.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const delta = e.clientX - startX;
+    if (Math.abs(delta) > CLICK_THRESHOLD) dragMoved = true;
+
+    if (dragIsMobile) {
+      const width = EXPANDED_WIDTH;
+      const translate = dragWasCollapsed
+        ? Math.min(0, Math.max(-width, -width + delta))
+        : Math.min(0, Math.max(-width, delta));
+      sidebarEl.style.transform = `translateX(${translate}px)`;
+      const fraction = 1 + translate / width; // 0 = zu (C), 1 = offen (A)
+      toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(fraction)}deg)`;
+      sidebarEl.style.setProperty('--drag-fade', Math.max(0, Math.min(1, fraction)));
+      setBackdrop(fraction);
+      currentWidth = fraction; // zwischenspeichern für pointerup (0..1 statt px)
+      return;
+    }
+
+    currentWidth = Math.min(EXPANDED_WIDTH, Math.max(COLLAPSED_WIDTH, startWidth + delta));
+    const fraction = (currentWidth - COLLAPSED_WIDTH) / (EXPANDED_WIDTH - COLLAPSED_WIDTH); // 0=B, 1=A
+    applyDesktopFrame(fraction, dragWasCollapsed);
+  });
+
+  resizeHandle.addEventListener('pointerup', () => {
+    if (!dragging) return;
+    dragging = false;
+
+    if (dragIsMobile) {
+      let shouldOpen;
+      if (!dragMoved) {
+        shouldOpen = dragWasCollapsed; // reiner Klick: umschalten (war zu -> jetzt auf)
+      } else {
+        shouldOpen = currentWidth > 0.5; // currentWidth trägt hier den Öffnungsgrad 0..1
+      }
+      toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(shouldOpen ? 1 : 0)}deg)`;
+      document.body.classList.toggle('sidebar-mobile-open', shouldOpen);
+      sidebarEl.style.transform = '';
+      void sidebarEl.offsetWidth; // Reflow erzwingen, während Transition noch deaktiviert ist
+      sidebarEl.style.transition = '';
+      sidebarEl.style.removeProperty('--drag-fade');
+      sidebarEl.classList.remove('is-dragging');
+      setArrowTransitionsEnabled(true);
+      releaseBackdrop();
+      toggleMini.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+      return;
+    }
+
+    if (!dragMoved) {
+      // Reiner Klick auf die Trennerlinie: animiert umschalten, wie der Pfeil
+      sidebarEl.style.transition = '';
+      sidebarEl.style.width = '';
+      sidebarEl.style.removeProperty('--drag-fade');
+      toggleDesktop.querySelector('.toggle-arrow-icon').style.transform = '';
+      sidebarEl.classList.remove('is-dragging');
+      animateSidebarToggle(!document.body.classList.contains('sidebar-collapsed'));
+      return;
+    }
+
+    const midpoint = (COLLAPSED_WIDTH + EXPANDED_WIDTH) / 2;
+    const willCollapse = currentWidth < midpoint;
+    toggleDesktop.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(willCollapse ? 0 : 1)}deg)`;
+    // Reflow erzwingen, während Transition noch deaktiviert ist — siehe
+    // ausführliche Begründung in animateSidebarToggle
+    document.body.classList.toggle('sidebar-collapsed', willCollapse);
+    sidebarEl.style.width = '';
+    void sidebarEl.offsetWidth;
+    sidebarEl.style.transition = '';
+    sidebarEl.style.removeProperty('--drag-fade');
+    sidebarEl.classList.remove('is-dragging');
+    setArrowTransitionsEnabled(true);
+    toggleDesktop.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+  });
+
+  // Reihenfolge im DOM = Menues + Untermenues der Reihe nach (fuer Mausrad/Swipe)
+  const navItems = Array.from(navButtons);
+
+  // Gemeinsame Hilfsfunktion für Mausrad + Swipe: springt im flachen Menü/Untermenü-Index weiter
+  function goToOffset(offset) {
+    if (!navItems.length) return;
+    const idx = navItems.findIndex(b => b.classList.contains('active'));
+    const from = idx === -1 ? 0 : idx;
+    const next = Math.min(navItems.length - 1, Math.max(0, from + offset));
+    navItems[next].click();
+  }
+
+  // Mit dem Mausrad über der Sidebar durch Menüs/Untermenüs der Reihe nach wechseln
+  sidebarEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    goToOffset(e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
+
+  // Sprachumschalter ist vorerst BEWUSST ohne Funktion — Button ist sichtbar,
+  // loest aber noch keine Uebersetzung aus. Sobald es DE/EN-Inhalte gibt, hier
+  // die Umschaltung einhaengen.
+  const langBtn = document.querySelector('.lang-switch');
+
+  // ---------- Mobil: dritter Zustand "komplett weg" ----------
+  const toggleMini = document.querySelector('.sidebar-toggle-mini');
+  const mobileBackdrop = document.querySelector('.sidebar-backdrop');
+
+  // ---------- Startrotation der Pfeile einmalig festlegen ----------
+  // FEHLERURSACHE (Mobil): das Chevron im SVG zeigt von Haus aus nach LINKS, also
+  // in Richtung "zuklappen". Die Rotation wurde bisher ausschliesslich waehrend
+  // einer Animation per JS gesetzt — beim Laden stand am Icon also gar kein
+  // transform. Der Mobil-Pfeil startete dadurch bei 0 Grad (Chevron nach links),
+  // obwohl die Sidebar zu ist und er nach rechts zeigen muesste. Beim ersten
+  // Klick setzt animateMobileToggle() im ersten Frame sofort den korrekten
+  // Startwert (180 Grad) — das ist der sichtbare Sprung, bevor die Animation
+  // ueberhaupt losgelaufen ist. Auf dem Desktop fiel es nicht auf, weil dort der
+  // Startzustand "ausgeklappt" zufaellig genau 0 Grad entspricht.
+  // Fix: den Zustand beim Laden einmal explizit schreiben — mit abgeschalteter
+  // Transition, damit sich der Pfeil beim Seitenaufbau nicht sichtbar eindreht.
+  (function initArrowRotation(){
+    setArrowTransitionsEnabled(false);
+    const desktopFraction = document.body.classList.contains('sidebar-collapsed') ? 0 : 1;
+    const mobileFraction  = document.body.classList.contains('sidebar-mobile-open') ? 1 : 0;
+    toggleDesktop.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(desktopFraction)}deg)`;
+    toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(mobileFraction)}deg)`;
+    void toggleMini.offsetWidth; // Reflow erzwingen, solange die Transition noch aus ist
+    setArrowTransitionsEnabled(true);
+  })();
+
+  // Spiegelt animateSidebarToggle() für den Mobil-Zustand (Position statt Breite) —
+  // dieselbe Ease-Kurve und dieselbe Rotationsformel wie Desktop, damit sich der
+  // Pfeil in Handy- und Webversion identisch verhält
+  // Das Abdunkeln des Hintergrunds haengt jetzt Frame fuer Frame an derselben
+  // Fortschrittsvariable wie die Seitenleiste. Vorher lag die Deckkraft an einer
+  // eigenen CSS-Transition, die erst startete, wenn die Klasse ganz am Ende der
+  // 320ms-Animation gesetzt wurde — das Abdunkeln begann also erst, nachdem die
+  // Leiste schon stand, und lief dann nochmal 250ms nach.
+  function setBackdrop(fraction) {
+    if (!mobileBackdrop) return;
+    mobileBackdrop.style.transition = 'none';
+    mobileBackdrop.style.opacity = String(Math.max(0, Math.min(1, fraction)));
+  }
+
+  function releaseBackdrop() {
+    if (!mobileBackdrop) return;
+    mobileBackdrop.style.opacity = '';
+    void mobileBackdrop.offsetWidth; // Reflow, solange die Transition noch aus ist
+    mobileBackdrop.style.transition = '';
+  }
+
+  function animateMobileToggle(willOpen) {
+    const wasOpen = document.body.classList.contains('sidebar-mobile-open');
+    if (wasOpen === willOpen) return;
+    sidebarEl.style.transition = 'none';
+    sidebarEl.classList.add('is-dragging');
+    setArrowTransitionsEnabled(false);
+    const width = EXPANDED_WIDTH;
+    const startFraction = wasOpen ? 1 : 0;
+    const endFraction = willOpen ? 1 : 0;
+    const duration = 320;
+    const t0 = performance.now();
+
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      // Ease-In-Ease-Out für die automatische Klick-Animation, wie beim Desktop-Pendant
+      const eased = easeInOutCubic(t);
+      const fraction = startFraction + (endFraction - startFraction) * eased;
+      sidebarEl.style.transform = `translateX(${(fraction - 1) * width}px)`;
+      toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(fraction)}deg)`;
+      sidebarEl.style.setProperty('--drag-fade', fraction);
+      setBackdrop(fraction);
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(endFraction)}deg)`;
+        document.body.classList.toggle('sidebar-mobile-open', willOpen);
+        sidebarEl.style.transform = '';
+        void sidebarEl.offsetWidth; // Reflow erzwingen, während Transition noch deaktiviert ist
+        sidebarEl.style.transition = '';
+        sidebarEl.style.removeProperty('--drag-fade');
+        setArrowTransitionsEnabled(true);
+        releaseBackdrop();
+        sidebarEl.classList.remove('is-dragging');
+        toggleMini.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  toggleMini.addEventListener('click', () => {
+    animateMobileToggle(!document.body.classList.contains('sidebar-mobile-open'));
+  });
+
+  mobileBackdrop.addEventListener('click', () => {
+    animateMobileToggle(false);
+  });
+
+  // Auf der GANZEN Sidebar (nicht nur der schmalen Trennerlinie) live draggen können —
+  // verhält sich genau wie das Ziehen an der vertikalen Linie: live Transform, faded
+  // Text/Farbe mit, rastet beim Loslassen ein. Ein Tap auf einen Menüpunkt bleibt
+  // unangetastet (erst ab spürbarer horizontaler Bewegung wird daraus ein Drag);
+  // überwiegend vertikale Bewegung wird als Scroll-Versuch erkannt und nicht als Drag behandelt.
+  let sidebarDragActive = false;
+  let sidebarDragDecided = false;
+  let sidebarDragMoved = false;
+  let sidebarDragStartX = 0;
+  let sidebarDragStartY = 0;
+  let sidebarDragWasCollapsed = false;
+  const SIDEBAR_DRAG_DECIDE_THRESHOLD = 6;
+
+  sidebarEl.addEventListener('pointerdown', (e) => {
+    if (!isTouchMode()) return;
+    if (resizeHandle.contains(e.target)) return; // die Trennerlinie hat ihre eigene Behandlung
+    sidebarDragActive = true;
+    sidebarDragDecided = false;
+    sidebarDragMoved = false;
+    sidebarDragStartX = e.clientX;
+    sidebarDragStartY = e.clientY;
+    sidebarDragWasCollapsed = !document.body.classList.contains('sidebar-mobile-open');
+  });
+
+  sidebarEl.addEventListener('pointermove', (e) => {
+    if (!sidebarDragActive) return;
+    const dx = e.clientX - sidebarDragStartX;
+    const dy = e.clientY - sidebarDragStartY;
+
+    if (!sidebarDragDecided) {
+      if (Math.abs(dx) < SIDEBAR_DRAG_DECIDE_THRESHOLD && Math.abs(dy) < SIDEBAR_DRAG_DECIDE_THRESHOLD) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        // Eher ein vertikaler Scroll-Versuch — kein Drag, Finger in Ruhe lassen
+        sidebarDragActive = false;
+        return;
+      }
+      sidebarDragDecided = true;
+      sidebarDragMoved = true;
+      sidebarEl.style.transition = 'none';
+      sidebarEl.classList.add('is-dragging');
+      setArrowTransitionsEnabled(false);
+    }
+
+    e.preventDefault();
+    const width = EXPANDED_WIDTH;
+    const translate = sidebarDragWasCollapsed
+      ? Math.min(0, Math.max(-width, -width + dx))
+      : Math.min(0, Math.max(-width, dx));
+    sidebarEl.style.transform = `translateX(${translate}px)`;
+    const fraction = Math.max(0, Math.min(1, 1 + translate / width));
+    toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(fraction)}deg)`;
+    sidebarEl.style.setProperty('--drag-fade', fraction);
+    setBackdrop(fraction);
+  }, { passive: false });
+
+  sidebarEl.addEventListener('pointerup', (e) => {
+    if (!sidebarDragActive) return;
+    sidebarDragActive = false;
+    if (!sidebarDragMoved) return; // war nur ein Tap — normalen Klick auf den Menüpunkt nicht stören
+
+    const width = EXPANDED_WIDTH;
+    const dx = e.clientX - sidebarDragStartX;
+    const translate = sidebarDragWasCollapsed
+      ? Math.min(0, Math.max(-width, -width + dx))
+      : Math.min(0, Math.max(-width, dx));
+
+    const openness = 1 + translate / width;
+    const shouldOpen = openness > 0.5;
+    toggleMini.querySelector('.toggle-arrow-icon').style.transform = `rotate(${arrowRotationDeg(shouldOpen ? 1 : 0)}deg)`;
+    document.body.classList.toggle('sidebar-mobile-open', shouldOpen);
+    sidebarEl.style.transform = '';
+    void sidebarEl.offsetWidth; // Reflow erzwingen, während Transition noch deaktiviert ist
+    sidebarEl.style.transition = '';
+    sidebarEl.style.removeProperty('--drag-fade');
+    sidebarEl.classList.remove('is-dragging');
+    setArrowTransitionsEnabled(true);
+    releaseBackdrop();
+    toggleMini.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  });
+
+  // ---------- Mobil: Wischen im Inhaltsfenster, mit sichtbarer Rueckmeldung ----------
+  // Waehrend des Wischens folgt die Seite dem Finger gedaempft und wird blasser —
+  // dadurch ist erkennbar, DASS gewischt wird und in welche Richtung. Reicht der
+  // Weg nicht aus, federt sie zurueck; reicht er, wird umgeschaltet und die neue
+  // Seite kommt von der Gegenseite hereingefahren.
+  const SWIPE_THRESHOLD = 60;   // ab hier wird umgeschaltet
+  const SWIPE_MAX_SHIFT = 72;   // maximaler Versatz waehrend des Ziehens
+  const SWIPE_DAMPING   = 0.35; // Seite folgt dem Finger gedaempft (kein 1:1-Mitziehen)
+  const SWIPE_MIN_FADE  = 0.55; // so blass wird die Seite waehrend des Ziehens hoechstens
+  const SWIPE_OUT_MS    = 150;  // alte Seite faehrt raus und blendet aus
+  const SWIPE_IN_MS     = 220;  // neue Seite kommt aus der Gegenrichtung herein
+
+  let swipeX = null, swipeY = null, swipeDecided = false, swipePage = null;
+
+  function activePageEl() {
+    return document.querySelector('.page.active');
+  }
+
+  function hasNeighbour(offset) {
+    if (!navItems.length) return false;
+    const idx = navItems.findIndex(b => b.classList.contains('active'));
+    const from = idx === -1 ? 0 : idx;
+    const next = Math.min(navItems.length - 1, Math.max(0, from + offset));
+    return next !== from && navItems[next].dataset.page !== navItems[from].dataset.page;
+  }
+
+  function setSwipeVisual(page, shift, fade, animated, ms) {
+    if (!page) return;
+    const d = (ms || 220) + 'ms';
+    page.style.transition = animated ? ('transform ' + d + ' ease-out, opacity ' + d + ' ease-out') : 'none';
+    page.style.transform = shift ? 'translateX(' + shift + 'px)' : 'translateX(0)';
+    page.style.opacity = String(fade);
+  }
+
+  function clearSwipeVisual(page) {
+    if (!page) return;
+    page.style.transition = '';
+    page.style.transform = '';
+    page.style.opacity = '';
+  }
+
+  contentEl.addEventListener('touchstart', (e) => {
+    swipeX = null;
+    if (!isTouchMode()) return;
+    if (e.touches.length !== 1) return;
+    // Lightbox und Seitenleiste haben ihre eigene Gestensteuerung
+    if (e.target.closest && (e.target.closest('.lightbox-overlay') || e.target.closest('.sidebar')
+        || e.target.closest('.gif-controls'))) return;
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+    swipeDecided = false;
+    swipePage = activePageEl();
+  }, { passive: true });
+
+  contentEl.addEventListener('touchmove', (e) => {
+    if (swipeX === null) return;
+    const dx = e.touches[0].clientX - swipeX;
+    const dy = e.touches[0].clientY - swipeY;
+
+    if (!swipeDecided) {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      // Ueberwiegend vertikal = Scroll-Versuch, den lassen wir unangetastet
+      if (Math.abs(dy) >= Math.abs(dx)) { swipeX = null; return; }
+      swipeDecided = true;
+    }
+
+    e.preventDefault(); // sonst scrollt die Seite waehrend des Wischens mit
+    const shift = Math.max(-SWIPE_MAX_SHIFT, Math.min(SWIPE_MAX_SHIFT, dx * SWIPE_DAMPING));
+    const fade  = Math.max(SWIPE_MIN_FADE, 1 - Math.abs(dx) / 320);
+    setSwipeVisual(swipePage, shift, fade, false);
+  }, { passive: false });
+
+  contentEl.addEventListener('touchend', (e) => {
+    const page = swipePage;
+    const decided = swipeDecided;
+    if (swipeX === null) { swipePage = null; clearSwipeVisual(page); return; }
+
+    const dx = e.changedTouches[0].clientX - swipeX;
+    const dy = e.changedTouches[0].clientY - swipeY;
+    swipeX = null; swipeY = null; swipePage = null; swipeDecided = false;
+
+    if (!decided) { clearSwipeVisual(page); return; }
+
+    const springBack = () => {
+      setSwipeVisual(page, 0, 1, true);
+      setTimeout(() => clearSwipeVisual(page), 260);
+    };
+
+    if (Math.abs(dx) <= SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) { springBack(); return; }
+
+    const dir = dx < 0 ? 1 : -1; // nach links wischen = naechste Seite, nach rechts = vorige
+
+    // Vorschau, ob es ueberhaupt eine Nachbarseite gibt — ohne schon umzuschalten,
+    // damit die Ausblend-Animation nicht auf der falschen Seite laeuft
+    if (!hasNeighbour(dir)) { springBack(); return; }
+
+    // Spiegelbildlicher Uebergang in zwei Haelften:
+    // 1. die alte Seite faehrt in Wischrichtung weiter und blendet GANZ aus
+    // 2. erst danach wird umgeschaltet, und die neue Seite kommt aus der
+    //    Gegenrichtung mit demselben Weg und derselben Kurve wieder herein.
+    // Vorher erschien die neue Seite abrupt bei 0.55 Deckkraft, waehrend die alte
+    // nur bis 0.55 ausgeblendet hatte — der Uebergang war dadurch einseitig.
+    setSwipeVisual(page, -dir * SWIPE_MAX_SHIFT, 0, true, SWIPE_OUT_MS);
+
+    setTimeout(() => {
+      clearSwipeVisual(page);
+      goToOffset(dir);
+      const next = activePageEl();
+      if (!next) return;
+      setSwipeVisual(next, dir * SWIPE_MAX_SHIFT, 0, false);
+      requestAnimationFrame(() => {
+        setSwipeVisual(next, 0, 1, true, SWIPE_IN_MS);
+        setTimeout(() => clearSwipeVisual(next), SWIPE_IN_MS + 40);
+      });
+    }, SWIPE_OUT_MS);
+  });
+</script>
+
+<div class="lightbox-overlay" id="lightbox-overlay">
+  <img decoding="async" id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+  (function(){
+    const overlay = document.getElementById('lightbox-overlay');
+    const overlayImg = document.getElementById('lightbox-img');
+
+    document.addEventListener('click', (e) => {
+      const img = e.target.closest('.ref-figure img');
+      if (img) {
+        overlayImg.src = img.src;
+        overlayImg.alt = img.alt;
+        overlay.classList.add('active');
+      }
+    });
+
+    overlay.addEventListener('click', () => {
+      overlay.classList.remove('active');
+      overlayImg.src = '';
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        overlay.classList.remove('active');
+        overlayImg.src = '';
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
