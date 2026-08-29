@@ -506,7 +506,7 @@
   .sidebar-toggle-mini{
     display:none;
     position:fixed;
-    top:23px; left:14px;
+    top:21px; left:14px;
     transform:translateY(-50%);
     z-index:500;
     width:30px; height:30px;
@@ -633,7 +633,11 @@
      Mobil-Query weiter oben kommt im Stylesheet vor ihnen und wuerde bei
      gleicher Spezifitaet ueberschrieben. */
   @media (max-width:640px){
-    .menu-d{padding:9px 14px;}
+    /* Unterkante der Menueleiste liegt genau auf der ersten Trennlinie der
+       Seitenleiste (gemessen: 40px). Hoehe statt Polsterung, damit es auch
+       bei anderen Schriftmetriken passt. */
+    .menu-d{padding:0 14px; min-height:40px;}
+
     .menu-d__title{font-size:10px; letter-spacing:0.05em;}
     .menu-d__title span{margin-left:4px;}
     .menu-d__brand{gap:6px;}
@@ -976,14 +980,12 @@
     position:relative;
     aspect-ratio: 16 / 10;
     overflow:hidden;
-    background:
-      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0/40px 40px,
-      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0/40px 40px,
-      #171717;
-  }
-
-  /* Bei nicht zugeschnittenen (contain) GIFs wird das Karo-Raster sichtbar — dort stattdessen einfarbig */
-  .viewport__stage:has(> img.contain){
+    /* Frueher lag hier ein 40px-Karoraster, das aber nur bei "contain"-Bildern
+       durch eine Sonderregel abgeschaltet wurde. Sichtbar wird so ein
+       Hintergrund ausschliesslich dann, wenn ihn gerade nichts verdeckt - beim
+       Bildwechsel also fuer den Bruchteil einer Sekunde. Genau daher kam das
+       aufblitzende Karo bei den einen und das Grau bei den anderen GIFs.
+       Einheitlich einfarbig, damit dort nie ein Muster aufblitzt. */
     background:#171717;
   }
 
@@ -1053,8 +1055,13 @@
     transition:opacity .15s ease;
   }
 
-  .viewport:hover .gif-progress{
-    opacity:1;
+  /* Nur auf Geraeten mit echtem Mauszeiger. Auf Touch bleibt ein :hover nach
+     dem Tippen sonst kleben, bis man woanders hintippt oder scrollt - genau
+     deshalb blieben die Knoepfe nach einem Tipper rosa stehen. */
+  @media (hover:hover){
+    .viewport:hover .gif-progress{
+      opacity:1;
+    }
   }
 
   @media (hover:none){
@@ -1084,10 +1091,14 @@
     transition:opacity .15s ease;
   }
 
-  .viewport:hover .gif-controls,
-  .gif-controls:focus-within,
   .viewport__stage.is-paused .gif-controls{
     opacity:1;
+  }
+
+  @media (hover:hover){
+    .viewport:hover .gif-controls{
+      opacity:1;
+    }
   }
 
   /* Auf Touch gibt es kein Hover — dort dauerhaft gut sichtbar */
@@ -1112,13 +1123,30 @@
     transition:background .15s ease, border-color .15s ease, color .15s ease;
   }
 
-  .gif-btn:hover{
+  /* Gedrueckt-Zustand: gilt auf Maus UND Touch und endet zuverlaessig beim
+     Loslassen - anders als :hover, das auf Touch haengenbleibt. */
+  .gif-btn:active{
     background:rgba(28,28,31,0.95);
     border-color:var(--accent-dim);
     color:var(--accent);
   }
 
+  @media (hover:hover){
+    .gif-btn:hover{
+      background:rgba(28,28,31,0.95);
+      border-color:var(--accent-dim);
+      color:var(--accent);
+    }
+  }
+
   .gif-btn svg{width:16px; height:16px; display:block;}
+
+  /* Auf dem Handy sitzen die Knoepfe tiefer im Bild. Dieser Block MUSS hinter
+     .gif-controls stehen - die Handy-Media-Query weiter oben im Stylesheet
+     wuerde bei gleicher Spezifitaet ueberschrieben. */
+  @media (max-width:640px){
+    .gif-controls{bottom:10px;}
+  }
 
   /* Ohne diese Zeile bliebe ein per [hidden] ausgeblendeter Knopf sichtbar -
      das display:flex oben ist staerker als die Browser-Regel fuer [hidden]. */
@@ -1138,6 +1166,14 @@
   .viewport__stage canvas.crop-center{object-position:center;}
   .viewport__stage canvas.zoom-crop{transform:scale(1.35); transform-origin:center 30%;}
   .viewport__stage canvas.crop-right{clip-path:inset(0 10px 0 0);}
+
+  /* Deckel waehrend eines Bildwechsels: verhindert, dass fuer einen Moment der
+     nackte Buehnenhintergrund durchscheint (der graue Blitz). */
+  .viewport__stage canvas.gif-cover{
+    position:absolute;
+    inset:0;
+    z-index:2;
+  }
 
   /* ---------- Hotkey-Keycap (einheitlich für G / R / S) ---------- */
   .keycap{
@@ -1369,10 +1405,20 @@
     cursor:pointer;
   }
 
-  a.stack-item:hover{
+  /* Gedrueckt-Zustand: gilt auf Maus UND Touch und endet beim Loslassen.
+     Auf Touch bliebe ein :hover sonst kleben, bis man woanders hintippt. */
+  a.stack-item:active{
     background:var(--surface-alt);
     border-color:var(--accent-dim);
     color:var(--text);
+  }
+
+  @media (hover:hover){
+    a.stack-item:hover{
+      background:var(--surface-alt);
+      border-color:var(--accent-dim);
+      color:var(--text);
+    }
   }
 
   .stack-item .idx{
@@ -1478,8 +1524,16 @@
     transition:color .15s ease;
   }
 
-  .stack-subitem:hover{
+  .stack-subitem:active{
     color:var(--accent);
+    background:rgba(236,18,121,0.12);
+    border-radius:5px;
+  }
+
+  @media (hover:hover){
+    .stack-subitem:hover{
+      color:var(--accent);
+    }
   }
 
   .placeholder-note{
@@ -1655,7 +1709,7 @@
     <span class="lang-switch__icon" aria-hidden="true">
       <img src="data:image/png;base64,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dTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAAsTAAALEwEAmpwYAAAGMWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4xLWMwMDIgNzkuYTZhNjM5NiwgMjAyNC8wMy8xMi0wNzo0ODoyMyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0RXZ0PSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VFdmVudCMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI1LjkgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyNi0wOC0yN1QxMzowNjo0NiswMjowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDgtMjdUMTM6MDg6NTIrMDI6MDAiIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDgtMjdUMTM6MDg6NTIrMDI6MDAiIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOjE5OTlkMmRhLTk3MDItYzg0MS1hZDgwLTEyZDY4ZjNhYmE4MCIgeG1wTU06RG9jdW1lbnRJRD0iYWRvYmU6ZG9jaWQ6cGhvdG9zaG9wOjAwYWZkM2VjLWQzYWMtNmU0Yy05NjM3LTJiYTgyMjEzMmJhZCIgeG1wTU06T3JpZ2luYWxEb2N1bWVudElEPSJ4bXAuZGlkOjJlYTQ2NWRjLTEwYjUtOGQ0OS1hYTI2LTNmYWZhZjE5MzBmNiI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MmVhNDY1ZGMtMTBiNS04ZDQ5LWFhMjYtM2ZhZmFmMTkzMGY2IiBzdEV2dDp3aGVuPSIyMDI2LTA4LTI3VDEzOjA2OjQ2KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjUuOSAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNvbnZlcnRlZCIgc3RFdnQ6cGFyYW1ldGVycz0iZnJvbSBhcHBsaWNhdGlvbi92bmQuYWRvYmUucGhvdG9zaG9wIHRvIGltYWdlL3BuZyIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTk5OWQyZGEtOTcwMi1jODQxLWFkODAtMTJkNjhmM2FiYTgwIiBzdEV2dDp3aGVuPSIyMDI2LTA4LTI3VDEzOjA4OjUyKzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjUuOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+VKiR4wAAFP9JREFUeNrtXY9HX9//33/xMslLXl4ykmQymSQZmUnmLZMkkkwyM0kSM0mSTCaJycwkk5lEZjJJZpIZM8kkmWQmZpJMn/v6fh+vt7v7ft3n83nuPefe+3rtjKd5v/e65z7vOY/zPM/f59LFxcUlS5ZMkJ0ESxZcliy4SmNSLl2qcui6Q40ONTvUgr+b8P/rHbrqULVDlXbOLLjc4KkGcDoc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" alt="">
     </span>
-    <span class="lang-switch__label">EN</span>
+    <span class="lang-switch__label">DE</span>
   </button>
 </aside>
 
@@ -1753,7 +1807,7 @@
     <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
 
     <h2 class="step__title">Isolation eines oder mehrere Objekte</h2>
-    <p class="step__desc">Wenn man an einer großen Szene oder vielen Objekten arbeitet, ist es hilfreich, wenn man ein paar Objekte ausblenden kann.</p>
+    <p class="step__desc">Wenn man an einer großen Szene mit vielen Objekten arbeitet, ist es hilfreich, wenn man ein paar Objekte ausblenden kann.</p>
 
     <div class="hotkey-list">
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 10px;">Numpad /</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Local View</b> - ausgewählte Objekte isolieren</span></span></div>
@@ -2237,12 +2291,18 @@
     <p class="step__desc">Wenn man in Blender mehrere Objekte oder Elemente auswählt, fällt auf, dass alle die gleiche Markierung erhalten und ein Objekt oder Element etwas hervorsticht.</p>
     <p class="step__desc">Das ist das sogenannte <b>Active Object/Element</b>.</p>
     <p class="step__desc">Grundsätzlich sieht man nur die Werte, Modifier etc. des aktiven Objekts und wenn man diese Werte in den Menüpunkten verändert, ist nur das aktive Element betroffen.</p>
+    <p class="step__desc">Man wählt ein neues Element als das aktive Element aus, indem man innerhalb der momentanen Auswahl die Shift-Taste gedrückt hält.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Innerhalb einer Auswahl ein neues aktives Element auswählen</span></span></div>
+    </div>
+
     <figure class="ref-figure ref-figure--sm">
       <img decoding="async" width="1584" height="349" src="assets/active_object%20copy.jpg" alt="Aktives Element hervorgehoben: Fläche im Edit Mode, Objekt im 3D-Viewport und Eintrag im Outliner">
       <figcaption>Das aktive Element sticht in jedem Kontext anders hervor: Fläche im Edit Mode, Objekt im Viewport, Eintrag im Outliner.</figcaption>
     </figure>
 
-    <p class="step__desc">Man wählt ein neues Element als das aktive Element aus, indem man innerhalb der momentanen Auswahl die Shift-Taste gedrückt hält.</p>
+    <div class="step__label">Alle Werte gleichzeitig ändern</div>
     <p class="step__desc">Wenn man alle Objekte gleichermaßen anpassen möchte, muss man die Alt-Taste gedrückt halten. Das funktioniert für viele Blender-Buttons, aber nicht für alle.</p>
 
     <div class="callout">
@@ -2250,18 +2310,19 @@
     </div>
 
     <div class="hotkey-list">
-      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Innerhalb einer Auswahl ein neues aktives Element auswählen</span></span></div>
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Ändert die Werte in diesem Block für alle ausgewählten Objekte</span></span></div>
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Verschiebt die Werte in diesem Block gleichmäßig für alle ausgewählten Objekte</span></span></div>
     </div>
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/active-object-01-alt-klick-aendert-einen-wert-fuer.gif" alt="Animation: Alt-Klick ändert einen Wert für alle ausgewählten Objekte gleichzeitig">
+        <img decoding="async" class="contain" src="assets/Transform_altclick_1_2-output.gif" alt="Animation: Mit gedrückter Alt-Taste werden Werte für alle ausgewählten Objekte gleichzeitig geändert und verschoben">
       </div>
     </div>
 
+    <div class="step__label">Verlinkung</div>
     <p class="step__desc">Man kann auch noch weitere Eigenschaften vom aktiven Objekt auf andere übertragen, z.B. Materialien, Modifier oder auch alle Transforms gleichzeitig.</p>
+    <p class="step__desc"><span class="ui-tag">Object</span> → <span class="ui-tag">Link/Transfer Data</span></p>
 
     <div class="hotkey-list">
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">L</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Verlinkungsmenü</span></span></div>
@@ -2631,6 +2692,23 @@
     return (img && (img.getAttribute('src') || img.dataset.gifSrc)) || '';
   }
 
+  // Die Buehne hatte ein festes Seitenverhaeltnis von 16:10. Passte das Bild
+  // nicht dazu, blieben oben und unten leere Streifen stehen. Jetzt uebernimmt
+  // die Buehne das Verhaeltnis des Bildes - nur bei "contain"-Bildern noetig,
+  // "cover" fuellt ohnehin formatfuellend aus.
+  function fitStage(stage, w, h) {
+    if (!stage || !w || !h) return;
+    const img = stage.querySelector('img');
+    if (!img || !img.classList.contains('contain')) return;
+    stage.style.aspectRatio = w + ' / ' + h;
+  }
+
+  document.querySelectorAll('.viewport__stage > img.contain').forEach((img) => {
+    const anwenden = () => fitStage(img.parentNode, img.naturalWidth, img.naturalHeight);
+    if (img.complete && img.naturalWidth) anwenden();
+    else img.addEventListener('load', anwenden, { once: true });
+  });
+
   function isGifImg(img) {
     const src = gifSrcOf(img);
     return src.startsWith('data:image/gif') || /\.gif(\?|#|$)/i.test(src);
@@ -2658,6 +2736,7 @@
       p.canvas.width = image.displayWidth;
       p.canvas.height = image.displayHeight;
     }
+    fitStage(p.stage, image.displayWidth, image.displayHeight);
     p.ctx.drawImage(image, 0, 0);
     p.dur = Math.max(20, (image.duration || 100000) / 1000);
     image.close();
@@ -2888,9 +2967,30 @@
   function fallbackRestart(stage) {
     const img = stage.querySelector('img');
     if (!img || !img.getAttribute('src')) return;
+
+    // Das Ersetzen des <img> zwingt den Browser, das GIF neu zu dekodieren.
+    // Bei mehreren Megabyte dauert das lange genug, dass fuer einen Moment der
+    // nackte Buehnenhintergrund sichtbar wird - der graue Blitz. Deshalb legen
+    // wir ein Standbild darueber, bis das neue Bild fertig ist. drawImage()
+    // liefert bei animierten Bildern ohnehin das ERSTE Bild, und genau das ist
+    // beim Neustart das richtige.
+    let deckel = null;
+    try {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      if (w && h) {
+        deckel = document.createElement('canvas');
+        deckel.width = w; deckel.height = h;
+        deckel.className = img.className + ' gif-cover';
+        deckel.getContext('2d').drawImage(img, 0, 0, w, h);
+        stage.appendChild(deckel);
+      }
+    } catch (e) { deckel = null; }
+
     const clone = img.cloneNode(true);
     img.replaceWith(clone);
-    if (clone.decode) clone.decode().catch(() => {});
+    const abraeumen = () => { if (deckel) deckel.remove(); };
+    if (clone.decode) clone.decode().then(abraeumen, abraeumen);
+    else setTimeout(abraeumen, 400);
   }
 
   function addGifControls(stage) {
@@ -3433,10 +3533,17 @@
     goToOffset(e.deltaY > 0 ? 1 : -1);
   }, { passive: false });
 
-  // Sprachumschalter ist vorerst BEWUSST ohne Funktion — Button ist sichtbar,
-  // loest aber noch keine Uebersetzung aus. Sobald es DE/EN-Inhalte gibt, hier
-  // die Umschaltung einhaengen.
+  // Sprachumschalter: wechselt die Beschriftung zwischen DE und EN. Uebersetzt
+  // wird noch nichts - sobald es zweisprachige Inhalte gibt, haengt die
+  // eigentliche Umschaltung hier mit dran.
   const langBtn = document.querySelector('.lang-switch');
+  const langLabel = document.querySelector('.lang-switch__label');
+
+  if (langBtn && langLabel) {
+    langBtn.addEventListener('click', () => {
+      langLabel.textContent = langLabel.textContent.trim() === 'DE' ? 'EN' : 'DE';
+    });
+  }
 
   // ---------- Mobil: dritter Zustand "komplett weg" ----------
   const toggleMini = document.querySelector('.sidebar-toggle-mini');
@@ -3706,7 +3813,14 @@
 
     // Vorschau, ob es ueberhaupt eine Nachbarseite gibt — ohne schon umzuschalten,
     // damit die Ausblend-Animation nicht auf der falschen Seite laeuft
-    if (!hasNeighbour(dir)) { springBack(); return; }
+    if (!hasNeighbour(dir)) {
+      springBack();
+      // Ganz vorne nach rechts gewischt: es gibt keine vorige Seite, also
+      // faehrt stattdessen die Seitenleiste herein - dieselbe Geste, die man
+      // auf dem Handy ohnehin dafuer erwartet.
+      if (dir === -1) animateMobileToggle(true);
+      return;
+    }
 
     // Spiegelbildlicher Uebergang in zwei Haelften:
     // 1. die alte Seite faehrt in Wischrichtung weiter und blendet GANZ aus
