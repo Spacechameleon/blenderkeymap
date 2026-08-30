@@ -353,12 +353,26 @@
     transition:color .15s ease, background .15s ease;
   }
 
-  .sidebar__item:hover{
+  /* Hover nur mit echtem Mauszeiger — auf Touch bliebe der Zustand nach einem
+     Tipper kleben. Die Rueckmeldung beim Tippen macht stattdessen .is-pressed
+     (siehe Gedrueckt-Zustand im Skript), das lange genug stehenbleibt, um
+     sichtbar zu sein. */
+  @media (hover:hover){
+    .sidebar__item:hover{
+      color:var(--text);
+    }
+
+    .sidebar__item:hover::after{
+      background:rgba(255,255,255,0.04);
+    }
+  }
+
+  .sidebar__item.is-pressed{
     color:var(--text);
   }
 
-  .sidebar__item:hover::after{
-    background:rgba(255,255,255,0.04);
+  .sidebar__item.is-pressed::after{
+    background:rgba(255,255,255,0.06);
   }
 
   /* Aktive Pink-Linie: eigenes Pseudo-Element, das bis zum ECHTEN Sidebar-Rand
@@ -644,6 +658,470 @@
     .menu-d__brand .dot{width:4px; height:4px;}
   }
 
+  /* ---------- Kachelmenue: Ueberblick ueber alle Kapitel ----------
+     Zusaetzlicher Einstieg neben der Seitenleiste, kein Ersatz: ein Knopf in
+     der Kopfzeile legt ein Raster aller Kapitel ueber die Seite. Die Kacheln
+     entstehen im Skript aus der Seitenleiste und den Seiten selbst, damit es
+     keinen zweiten Satz Texte gibt, der beim naechsten Inhaltswechsel
+     vergessen werden koennte. */
+  /* ---------- Suche: Knopf oben rechts ---------- */
+  .suche-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:18px;
+    padding:6px 12px 6px 10px;
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    line-height:1;
+    cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+
+  .suche-toggle svg{width:15px; height:15px; display:block;}
+
+  @media (hover:hover){
+    .suche-toggle:hover{
+      color:var(--text);
+      border-color:var(--accent-dim);
+      background:var(--surface-alt);
+    }
+  }
+
+  .suche-toggle:active,
+  .suche-toggle.is-pressed{
+    color:var(--accent);
+    border-color:var(--accent-dim);
+    background:var(--surface-alt);
+  }
+
+  .suche-toggle[aria-expanded="true"]{
+    color:var(--accent);
+    border-color:var(--accent-dim);
+  }
+
+  /* ---------- Suche: Kopf im Overlay ---------- */
+  /* Oben ausgerichtet statt mittig: das Suchfeld soll bei jedem Tastendruck an
+     derselben Stelle stehen, egal wie viele Treffer darunter erscheinen. */
+  .such-inhalt{
+    width:100%;
+    max-width:740px;
+    margin:0 auto;
+  }
+
+  .such-kopf{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 0 14px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:16px;
+  }
+
+  .such-kopf__lupe{
+    width:20px;
+    height:20px;
+    flex-shrink:0;
+    color:var(--muted);
+  }
+
+  .such-feld{
+    flex:1;
+    min-width:0;
+    appearance:none;
+    background:none;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    font-size:22px;
+    font-weight:500;
+    padding:0;
+  }
+
+  .such-feld::placeholder{
+    color:var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    font-weight:400;
+  }
+
+  /* Das Kreuzchen, das manche Browser in ein type=search legen, passt nicht
+     ins Bild - geschlossen wird ueber Esc, das X oben oder den Klick daneben. */
+  .such-feld::-webkit-search-cancel-button{display:none;}
+
+  .such-status{
+    margin:0 0 14px;
+    font-size:12px;
+    color:var(--muted);
+    min-height:1em;
+  }
+
+  .such-hinweis{
+    grid-column:1 / -1;
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  .such-hinweis p{margin:0 0 14px;}
+
+  .such-hinweis__beispiele{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .such-beispiel{
+    appearance:none;
+    font-family:'Inter', sans-serif;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--muted);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:5px 12px;
+    cursor:pointer;
+    transition:color .15s ease, border-color .15s ease;
+  }
+
+  @media (hover:hover){
+    .such-beispiel:hover{color:var(--accent); border-color:var(--accent-dim);}
+  }
+
+  .such-beispiel:active,
+  .such-beispiel.is-pressed{color:var(--accent); border-color:var(--accent-dim);}
+
+  /* Tasten, die den Treffer erklaeren */
+  .tile__keys{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:5px;
+    margin-top:2px;
+  }
+
+  .tile-overlay{
+    position:fixed;
+    inset:0;
+    /* ueber der Seitenleiste (500), aber unter der Bildlupe (1000) */
+    z-index:600;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:72px 28px 36px;
+    overflow-y:auto;
+    /* Platz fuer die Bildlaufleiste immer freihalten. Ohne das erscheint sie
+       erst, wenn genug Treffer da sind, verschmaelert in diesem Moment den
+       Innenraum - und das mittig gesetzte Suchfeld rueckte bei jedem Tippen
+       ein Stueck zur Seite. */
+    scrollbar-gutter:stable;
+    overscroll-behavior:contain;
+    background:rgba(8,8,10,0.94);
+    backdrop-filter:blur(10px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s ease;
+  }
+
+  .tile-overlay.open{opacity:1; pointer-events:auto;}
+
+  /* Geschlossen ganz aus dem Dokument nehmen, sonst laufen die Kacheln beim
+     Durchtabben der Seite mit. display:flex oben ist staerker als die
+     Browser-Regel fuer [hidden], deshalb diese Zeile. */
+  .tile-overlay[hidden]{display:none;}
+
+  /* margin:auto statt align-items:center — zentriert, solange das Raster
+     hineinpasst, laesst sich aber scrollen, sobald es hoeher wird. Bei
+     align-items:center waere der obere Rand nicht mehr erreichbar. */
+  .tile-grid{
+    display:grid;
+    /* auto-fill statt auto-fit: ein einzelner Treffer soll eine Kachelbreite
+       behalten und sich nicht ueber die ganze Zeile ziehen. */
+    grid-template-columns:repeat(auto-fill, minmax(215px, 1fr));
+    gap:14px;
+    width:100%;
+    max-width:740px;
+  }
+
+  .tile{
+    display:flex;
+    flex-direction:column;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    opacity:0;
+    transform:translateY(8px);
+    transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .28s ease,
+               border-color .15s ease, background .15s ease;
+  }
+
+  .tile-overlay.open .tile{opacity:1; transform:translateY(0);}
+
+  .tile.is-current{
+    border-color:var(--accent-dim);
+    background:rgba(236,18,121,0.07);
+  }
+
+  @media (hover:hover){
+    .tile:hover{border-color:var(--accent-dim);}
+  }
+
+  /* Der Kachelkopf ist der eigentliche Knopf; die Unterpunkte liegen daneben
+     im selben Rahmen, damit keine Schaltflaeche in einer anderen steckt. */
+  .tile__main{
+    appearance:none;
+    background:none;
+    border:none;
+    text-align:left;
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    padding:16px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:9px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+
+  .tile__main:active,
+  .tile__main.is-pressed{background:var(--surface-alt);}
+
+  .tile__icon{
+    width:32px;
+    height:32px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(236,18,121,0.10);
+    color:var(--accent);
+    flex-shrink:0;
+  }
+
+  .tile__icon svg{width:17px; height:17px; display:block;}
+
+  /* Themengruppe als Pille (Grundlagen / Objekte / Modellierung). Sie ordnet
+     die sechs Kapitel in drei Bloecke, ohne dass dafuer Ueberschriften und
+     Trennlinien ins Raster muessen. */
+  .tile__badge{
+    align-self:flex-start;
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    color:var(--accent);
+    background:rgba(236,18,121,0.12);
+    padding:2px 9px;
+    border-radius:20px;
+  }
+
+  .tile__title{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15.5px;
+    font-weight:500;
+    line-height:1.25;
+  }
+
+  .tile__desc{
+    font-size:12.5px;
+    line-height:1.45;
+    color:var(--muted);
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  .tile__subs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:0 16px 14px;
+  }
+
+  .tile__sub{
+    appearance:none;
+    font-family:'Inter', sans-serif;
+    font-size:11.5px;
+    font-weight:500;
+    color:var(--muted);
+    background:none;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:4px 10px;
+    cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+
+  @media (hover:hover){
+    .tile__sub:hover{color:var(--accent); border-color:var(--accent-dim);}
+  }
+
+  .tile__sub:active,
+  .tile__sub.is-pressed{
+    color:var(--accent);
+    border-color:var(--accent-dim);
+    background:rgba(236,18,121,0.12);
+  }
+
+  .tile-overlay__close{
+    position:fixed;
+    top:16px;
+    right:18px;
+    width:36px;
+    height:36px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--line);
+    color:var(--muted);
+    cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+
+  @media (hover:hover){
+    .tile-overlay__close:hover{color:var(--text); background:rgba(255,255,255,0.1);}
+  }
+
+  .tile-overlay__close:active,
+  .tile-overlay__close.is-pressed{color:var(--accent); border-color:var(--accent-dim);}
+
+  /* Auf dem Handy zwei kompakte Spalten statt einer langen Liste: alle zehn
+     Kapitel bleiben so mit einem Blick erfassbar. Die Beschreibung faellt
+     dafuer weg, Name und Titel reichen zum Wiedererkennen. */
+  @media (max-width:640px){
+    .suche-toggle{margin-left:10px; padding:5px 7px; gap:0;}
+    .suche-toggle__label{display:none;}
+    .such-feld{font-size:18px;}
+    .such-feld::placeholder{font-size:13px;}
+    .such-kopf{gap:10px; padding-bottom:12px; margin-bottom:12px;}
+
+    .tile-overlay{padding:60px 12px 24px;}
+    .tile-grid{grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;}
+    .tile__main{padding:13px 13px 12px; gap:7px;}
+    .tile__icon{width:28px; height:28px; border-radius:7px;}
+    .tile__icon svg{width:15px; height:15px;}
+    .tile__title{font-size:13.5px;}
+    .tile__desc{display:none;}
+    .tile__subs{padding:0 13px 12px;}
+    .tile__sub{font-size:11px; padding:3px 8px;}
+    .tile-overlay__close{top:10px; right:12px; width:32px; height:32px;}
+  }
+
+  /* ---------- Sprungpunkte am rechten Rand ----------
+     Ein Punkt je Abschnitt der GERADE angezeigten Seite - sie zeigen also, wo
+     man innerhalb des Kapitels steht, und werden bei jedem Seitenwechsel neu
+     aufgebaut. Alle inaktiven Punkte sind gleich gross; der aktive ist nur
+     leicht groesser, damit die Reihe ruhig bleibt. */
+  .section-dots{
+    position:fixed;
+    right:16px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:11px;
+    z-index:90;
+  }
+
+  .section-dots[hidden]{display:none;}
+
+  .section-dots__dot{
+    appearance:none;
+    width:7px;
+    height:7px;
+    padding:0;
+    border:none;
+    border-radius:50%;
+    background:var(--line);
+    cursor:pointer;
+    transition:background .15s ease, transform .15s ease;
+  }
+
+  .section-dots__dot.active{
+    background:var(--accent);
+    transform:scale(1.3);
+  }
+
+  @media (hover:hover){
+    .section-dots__dot:hover{background:var(--muted);}
+    .section-dots__dot.active:hover{background:var(--accent);}
+  }
+
+  .section-dots__dot:active,
+  .section-dots__dot.is-pressed{background:var(--accent);}
+
+  /* Auf schmalen Fenstern raus: dort gibt es das Wischen, und die Punkte
+     kaemen den Inhalten in die Quere. */
+  @media (max-width:900px){
+    .section-dots{display:none;}
+  }
+
+  /* ---------- Zurueck nach oben (nur schmale Fenster) ----------
+     Auf dem Handy sind die Sprungpunkte keine gute Idee: 7px sind weit unter
+     der Mindestgroesse fuer ein Tippziel, und eine feste Leiste am Rand liegt
+     genau dort, wo der Daumen scrollt. Statt dessen ein Knopf, der nach dem
+     ersten Scrollen erscheint und an den Seitenanfang zurueckbringt - dort
+     stehen Titel und Kapiteluebersicht.
+     Er sitzt LINKS unten: rechts unten sitzen die Knoepfe im GIF, und ein
+     fester Knopf haette sich beim Scrollen staendig darueber geschoben. */
+  .to-top{
+    position:fixed;
+    left:14px;
+    bottom:16px;
+    z-index:120;
+    width:32px;
+    height:32px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:rgba(12,12,14,0.82);
+    backdrop-filter:blur(6px);
+    color:var(--muted);
+    cursor:pointer;
+    opacity:0;
+    pointer-events:none;
+    transform:translateY(6px);
+    transition:opacity .18s ease, transform .18s ease, color .15s ease, border-color .15s ease;
+  }
+
+  .to-top svg{width:15px; height:15px; display:block;}
+
+  .to-top.visible{opacity:0.85; pointer-events:auto; transform:translateY(0);}
+
+  .to-top:active,
+  .to-top.is-pressed{color:var(--accent); border-color:var(--accent-dim);}
+
+  @media (max-width:900px){
+    .to-top{display:flex;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .to-top{transition:opacity .18s ease, color .15s ease, border-color .15s ease; transform:none;}
+    .to-top.visible{transform:none;}
+  }
+
+  /* Wer Bewegung im System abgestellt hat, bekommt das Raster ohne Auffahren. */
+  @media (prefers-reduced-motion: reduce){
+    .tile-overlay{transition:none;}
+    .tile{transition:border-color .15s ease, background .15s ease; transform:none;}
+  }
+
   kbd{
     font-family:'JetBrains Mono', monospace;
     font-size:10px;
@@ -665,37 +1143,36 @@
 
   .page.active{display:block;}
 
+  /* Pinker Titel: Inter im normalen Schnitt, ohne Strich davor, mit etwas mehr
+     Luft zum Titel darunter. Ohne den Strich braucht die Zeile kein flex mehr -
+     sie ist wieder ein schlichter Block. */
   .eyebrow{
-    font-family:'JetBrains Mono', monospace;
+    font-family:'Inter', sans-serif;
     font-size:12px;
+    font-weight:400;
     color:var(--accent);
-    letter-spacing:0.12em;
+    letter-spacing:0.08em;
     text-transform:uppercase;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:18px;
+    margin-bottom:14px;
   }
 
-  .eyebrow::before{
-    content:"";
-    width:22px; height:1px;
-    background:var(--accent);
-  }
-
+  /* Variante B: die Ueberschrift bleibt ein Auftritt, verliert aber das
+     Plakathafte (vorher bis 67px). Bei dieser Groesse braucht sie weder die
+     sehr enge Zeilenhoehe noch das negative Zeichenabstand-Korrektiv - beides
+     war nur fuer den grossen Grad noetig. */
   h1.title{
     font-family:'Space Grotesk', sans-serif;
     font-weight:700;
-    font-size:clamp(2.6rem, 5vw, 4.2rem);
-    line-height:1.02;
-    letter-spacing:-0.01em;
+    font-size:clamp(1.9rem, 3.1vw, 2.6rem);
+    line-height:1.1;
+    letter-spacing:0;
     margin-bottom:14px;
   }
 
   .subtitle{
     color:var(--muted);
-    font-size:16px;
-    max-width:520px;
+    font-size:15px;
+    max-width:680px;
     margin-bottom:24px;
     line-height:1.6;
   }
@@ -730,12 +1207,25 @@
     margin-bottom:0;
     scroll-margin-top:110px;
     padding:var(--space-lg);
+    /* Luft am Ende jedes Abschnitts, bevor der naechste beginnt. Bewusst als
+       Polsterung INNEN und nicht als Aussenabstand: die Abschnitte liegen als
+       abwechselnd getoente Baender direkt aneinander - ein Aussenabstand haette
+       eine Luecke zwischen den Baendern gerissen, statt dem Inhalt Raum zu geben. */
+    padding-bottom:calc(var(--space-lg) + var(--space-md));
     margin-left:calc(var(--space-lg) * -1);
     margin-right:calc(var(--space-lg) * -1);
   }
 
   .step.no-bottom-pad{
     padding-bottom:0;
+  }
+
+  /* Steht vor dem ersten Unterabschnitt noch eigener Inhalt - in der Regel ein
+     Einleitungssatz -, dann endet an dieser Stelle ebenfalls ein Textblock und
+     braucht denselben Raum zum Atmen wie das Ende eines ganzen Abschnitts.
+     Ohne diese Zeile klebte der Einleitungssatz am Punkt-Marker darunter. */
+  .step.vorspann-luft > .substep.color-split-start{
+    margin-top:var(--space-md);
   }
 
   .stripe-odd{
@@ -755,28 +1245,39 @@
     margin-bottom:0;
   }
 
+  /* Hat ein Abschnitt mehrere Unterabschnitte, uebernimmt der letzte von ihnen
+     den unteren Rand (der Abschnitt selbst steht dann auf no-bottom-pad). Ohne
+     diese Zeile bekaemen genau diese Abschnitte die zusaetzliche Luft nicht. */
+  .step.no-bottom-pad > .substep:last-child{
+    padding-bottom:calc(var(--space-lg) + var(--space-md));
+  }
+
   .step:last-child{
     margin-bottom:0;
   }
 
+  /* Unterueberschrift in derselben Sprache wie der Abschnittstitel (Space
+     Grotesk, fett), aber eine Stufe kleiner - sonst waeren Ueberschrift und
+     Unterueberschrift gleich laut und die Gliederung waere weg. */
   .step__label{
     display:inline-block;
-    font-family:'Inter', sans-serif;
-    font-weight:400;
-    font-size:16px;
-    letter-spacing:0.01em;
-    color:#d0d0d3;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    letter-spacing:0;
+    color:var(--text);
     padding:0;
     border:none;
     margin-top:var(--space-lg);
-    margin-bottom:var(--space-xs);
+    margin-bottom:12px;
   }
 
+  /* h2 aus dem Konzept: Space Grotesk, fett, 1.5rem, 12px Abstand nach unten. */
   h2.step__title{
     font-family:'Space Grotesk', sans-serif;
-    font-weight:400;
+    font-weight:700;
     font-size:1.5rem;
-    margin-bottom:6px;
+    margin:0 0 12px;
   }
 
   .step__title-row{
@@ -913,14 +1414,13 @@
   .step__desc{
     color:var(--muted);
     font-size:14px;
-    max-width:560px;
+    /* 680px statt 560px: bei 560 brach der Text schon bei rund 63% der Breite
+       um, obwohl Tastenblock und GIF darunter 895px breit sind - das sah aus,
+       als gaebe der Satz zu frueh auf. 680px sind rund 58 Zeichen je Zeile und
+       damit weiterhin im gut lesbaren Bereich. */
+    max-width:680px;
     margin-bottom:0;
     line-height:1.55;
-  }
-
-  /* Wenn direkt ein Substep mit eigener Farbtrennung folgt, den Übergang mittig legen */
-  .step__desc.has-color-split{
-    padding-bottom:var(--space-md);
   }
 
   .substep.color-split-start{
@@ -957,8 +1457,11 @@
     margin-top:var(--space-lg);
   }
 
+  /* 16px statt 24: die Zeilenhoehe im Fliesstext betraegt rund 22px, ein
+     Absatzabstand von 24px war damit groesser als eine ganze Zeile und liess
+     die Absaetze in einzelne Inseln zerfallen. */
   .step__desc + .step__desc{
-    margin-top:var(--space-md);
+    margin-top:var(--space-sm);
   }
 
   .viewport__chrome{
@@ -1091,19 +1594,20 @@
     transition:opacity .15s ease;
   }
 
-  .viewport__stage.is-paused .gif-controls{
-    opacity:1;
-  }
-
   @media (hover:hover){
     .viewport:hover .gif-controls{
       opacity:1;
     }
   }
 
-  /* Auf Touch gibt es kein Hover — dort dauerhaft gut sichtbar */
+  /* Auf Touch gibt es kein Hover — dort dauerhaft gut sichtbar, und im
+     pausierten Zustand voll deckend als Hinweis. Auf dem Desktop bewusst
+     NICHT: dort haengt die Deckkraft allein am Mauszeiger, sonst blieben die
+     Knoepfe nach einer Pause dauerhaft hell stehen, auch wenn die Maus
+     laengst woanders ist. */
   @media (hover:none){
     .gif-controls{opacity:0.9;}
+    .viewport__stage.is-paused .gif-controls{opacity:1;}
   }
 
   .gif-btn{
@@ -1125,7 +1629,8 @@
 
   /* Gedrueckt-Zustand: gilt auf Maus UND Touch und endet zuverlaessig beim
      Loslassen - anders als :hover, das auf Touch haengenbleibt. */
-  .gif-btn:active{
+  .gif-btn:active,
+  .gif-btn.is-pressed{
     background:rgba(28,28,31,0.95);
     border-color:var(--accent-dim);
     color:var(--accent);
@@ -1141,11 +1646,37 @@
 
   .gif-btn svg{width:16px; height:16px; display:block;}
 
+  /* Beide Symbole liegen fest im Knopf, sichtbar ist immer nur eines */
+  .gif-ic{display:none; line-height:0;}
+  .gif-btn--play .gif-ic--pause{display:block;}
+  .viewport__stage.is-paused .gif-btn--play .gif-ic--pause{display:none;}
+  .viewport__stage.is-paused .gif-btn--play .gif-ic--play{display:block;}
+
   /* Auf dem Handy sitzen die Knoepfe tiefer im Bild. Dieser Block MUSS hinter
      .gif-controls stehen - die Handy-Media-Query weiter oben im Stylesheet
      wuerde bei gleicher Spezifitaet ueberschrieben. */
+  /* Auf dem Handy kleiner und zurueckhaltender. Bewusst ueber echte Masse und
+     NICHT ueber transform:scale() - beim Wechsel der Deckkraft legt der Browser
+     fuer ein skaliertes Element eine eigene Ebene an und rastert es dabei
+     minimal versetzt neu. Genau das sah aus, als wuerden die Symbole
+     verrutschen. Ohne transform gibt es diesen Sprung nicht. */
   @media (max-width:640px){
-    .gif-controls{bottom:10px;}
+    .gif-controls{
+      bottom:10px;
+      gap:4px;
+      opacity:0.6;
+    }
+
+    .gif-btn{
+      width:26px;
+      height:26px;
+      border-radius:7px;
+    }
+
+    .gif-btn svg{
+      width:13px;
+      height:13px;
+    }
   }
 
   /* Ohne diese Zeile bliebe ein per [hidden] ausgeblendeter Knopf sichtbar -
@@ -1304,6 +1835,23 @@
     max-width:460px;
   }
 
+  /* Werkzeugleiste als liegende Reihe: Bild ist 2x geliefert,
+     wird auf halbe Breite gesetzt und bleibt dadurch pixelscharf. */
+  .ref-figure--toolbar{
+    max-width:567px;
+    background:#3d3d3d;
+    border-radius:8px;
+  }
+
+  /* Die Statusleiste ist im Original ein einziger, sehr breiter Streifen. Auf
+     zwei Zeilen umgebrochen passt sie in die Spalte, ohne dass die Beschriftung
+     kleiner gerechnet werden muss. Ebenfalls 2x geliefert, halbe Breite. */
+  .ref-figure--statusleiste{
+    max-width:715px;
+    background:#242424;
+    border-radius:8px;
+  }
+
   .ref-figure img{
     width:100%;
     height:auto;
@@ -1378,12 +1926,30 @@
     font-size:13px;
   }
 
+  /* Pfeil zwischen Tasten einer FOLGE (erst S, dann X, dann 0) - im Gegensatz
+     zum "+" fuer gleichzeitig gedrueckte Tasten. Etwas heller als der Pfeil in
+     den Bildunterschriften, weil er hier auf dem getoenten Block steht. */
+  .hotkey-row__arrow{
+    color:var(--muted);
+    font-size:13px;
+    padding:0 1px;
+  }
+
   /* ---------- Kapitelübersicht (klickbare Sprungliste, auch für Modifier-Platzhalter genutzt) ---------- */
+  /* ---------- Kapiteluebersicht (Stand v139: Kaesten mit Nummernfeld) ---------- */
   .stack-list{
     display:flex;
     flex-direction:column;
     gap:10px;
     max-width:560px;
+  }
+
+  /* Die Gruppe ist nur eine Klammer um Eintrag und Unterliste - bewusst OHNE
+     eigenen Abstand, sonst bliebe unter einem eingeklappten Eintrag eine
+     Luecke in Hoehe des Abstands stehen. */
+  .stack-group{
+    display:flex;
+    flex-direction:column;
   }
 
   .stack-item{
@@ -1407,7 +1973,8 @@
 
   /* Gedrueckt-Zustand: gilt auf Maus UND Touch und endet beim Loslassen.
      Auf Touch bliebe ein :hover sonst kleben, bis man woanders hintippt. */
-  a.stack-item:active{
+  a.stack-item:active,
+  a.stack-item.is-pressed{
     background:var(--surface-alt);
     border-color:var(--accent-dim);
     color:var(--text);
@@ -1446,34 +2013,32 @@
     border-left:2px solid var(--line);
     background:linear-gradient(180deg, rgba(11,11,13,0.55), rgba(11,11,13,0.35));
     border-radius:0;
-    /* Nur die Deckkraft weich einblenden — Höhe/Abstand (layoutrelevant,
-       verschieben nachfolgenden Inhalt) sofort umschalten. Sonst entsteht
-       ein Zeitfenster, in dem ein schneller Klick auf einen Unterlink noch
-       auf die alte (eingeklappte) Position trifft und danebengeht. */
-    transition:opacity .15s ease;
+    /* Die Hoehe laeuft mit, damit die Unterlinks nicht aufploppen. Sie ist
+       layoutrelevant (schiebt nachfolgenden Inhalt), deshalb bewusst kurz.
+       max-height statt height, weil sich 'auto' nicht animieren laesst - den
+       echten Pixelwert setzt setGroupExpanded() fuer die Dauer der Bewegung
+       inline, damit das Tempo zur tatsaechlichen Hoehe passt. */
+    transition:max-height .22s cubic-bezier(.4,0,.2,1),
+               opacity .16s ease,
+               margin-top .22s cubic-bezier(.4,0,.2,1),
+               padding-top .22s cubic-bezier(.4,0,.2,1),
+               padding-bottom .22s cubic-bezier(.4,0,.2,1);
   }
 
   .stack-group.expanded .stack-subitems{
-    max-height:300px;
+    /* Reine Obergrenze fuer den Ruhezustand, bewusst reichlich - den Wert
+       waehrend der Bewegung setzt setGroupExpanded() exakt. */
+    max-height:600px;
     opacity:1;
     margin-top:6px;
     padding-top:8px;
     padding-bottom:8px;
   }
 
-  /* Aufklappen per Hover gilt NUR oberhalb des Breakpoints. Auf Touch-Geraeten
-     feuert der Browser beim ersten Tap zusaetzlich ein :hover/mouseenter mit —
-     dadurch war die Gruppe schon offen, bevor der Klick-Handler dran war, und
-     der Pfeil klappte scheinbar verkehrt herum. */
-  @media (min-width:641px){
-    .stack-group:hover .stack-subitems{
-      max-height:300px;
-      opacity:1;
-      margin-top:6px;
-      padding-top:8px;
-      padding-bottom:8px;
-    }
-  }
+  /* Kein CSS-:hover-Aufklappen: das macht setGroupExpanded() auf allen Breiten,
+     sonst gaebe es zwei konkurrierende Quellen fuer die Hoehe und die Animation
+     wuerde springen. Auf Touch feuert beim ersten Tap ohnehin ein :hover mit,
+     das die Gruppe geoeffnet haette, bevor der Klick-Handler dran war. */
 
   .stack-group > .stack-item{
     padding-right:44px;
@@ -1507,6 +2072,7 @@
 
   .stack-group:hover > .stack-item .stack-item__arrow::after,
   .stack-item:active .stack-item__arrow::after,
+  .stack-item.is-pressed .stack-item__arrow::after,
   .stack-group.expanded > .stack-item .stack-item__arrow::after{
     opacity:1;
   }
@@ -1514,6 +2080,153 @@
   .stack-group.expanded > .stack-item .stack-item__arrow::after{
     border-top:none;
     border-bottom:6px solid var(--muted);
+  }
+
+  /* Kachel-Variante der Kapiteluebersicht (bisher nur Edit Mode). Gleiche
+     Bausteine wie die Listenfassung - nur als Raster statt untereinander, mit
+     einem Standbild aus dem jeweiligen GIF als Hintergrund. Sprunglogik und
+     Gedrueckt-Zustand bleiben dadurch unveraendert. */
+  .chapter-overview--tiles .stack-list{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    max-width:760px;
+  }
+
+  .chapter-overview--tiles .stack-item{
+    position:relative;
+    overflow:hidden;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-end;
+    gap:4px;
+    min-height:132px;
+    padding:14px 16px;
+    border-radius:12px;
+  }
+
+  /* Das Bild liegt auf einer eigenen Ebene, nicht auf der Kachel selbst - nur
+     so laesst es sich heranfahren, waehrend die Kachel stehen bleibt. Das
+     overflow:hidden der Kachel beschneidet den Ueberstand. */
+  .chapter-overview--tiles .stack-item::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    z-index:0;
+    background-image:var(--kachelbild);
+    background-size:cover;
+    background-position:center;
+    transform:scale(1);
+    transition:transform .35s cubic-bezier(.25,.6,.3,1);
+  }
+
+  /* Der Verlauf setzt frueh ein und endet tief. Nicht aus Geschmack, sondern
+     weil die Aufnahmen unterschiedlich hell sind: ein Verlauf, der erst spaet
+     dunkel wird, traegt nur die dunklen Bilder. Gemessener Kontrast der
+     Titelzeile ueber alle sechs Kacheln: 15,9 bis 17,1 zu 1 (noetig sind 4,5). */
+  .chapter-overview--tiles .stack-item::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    z-index:0;
+    background:linear-gradient(180deg,
+      rgba(11,11,13,0.05) 0%,
+      rgba(11,11,13,0.35) 35%,
+      rgba(11,11,13,0.88) 72%,
+      rgba(11,11,13,0.97) 100%);
+    transition:opacity .15s ease;
+    pointer-events:none;
+  }
+
+  /* Nur Elemente lassen sich ueber den Verlauf heben - nackter Text im Link
+     nicht. Deshalb steckt der Titel in einem eigenen span. */
+  .chapter-overview--tiles .stack-item > *{
+    position:relative;
+    z-index:1;
+  }
+
+  /* Die Nummer uebernimmt hier die Rolle der kleinen pinken Zeile ueber einer
+     Ueberschrift - ohne Rahmen, denn ein Kaestchen im Kaestchen wiederholt nur,
+     was die Kachelkante schon sagt. */
+  .chapter-overview--tiles .idx{
+    border:none;
+    padding:0;
+    background:none;
+    font-family:'Inter', sans-serif;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.08em;
+  }
+
+  .chapter-overview--tiles .stack-item__label{
+    color:var(--text);
+    font-size:14.5px;
+    font-weight:600;
+    line-height:1.25;
+  }
+
+  /* Kapitel, zu denen es noch kein Bild gibt. Gleiche Kachelform, aber ruhig
+     zurueckgenommen und ohne Verlauf - ein Verlauf ueber leerer Flaeche saehe
+     aus wie ein Bild, das nicht geladen hat. */
+  .chapter-overview--tiles .stack-item--leer{
+    background:var(--surface-alt);
+    opacity:0.5;
+  }
+
+  .chapter-overview--tiles .stack-item--leer::after{
+    display:none;
+  }
+
+  .chapter-overview--tiles .stack-item__hint{
+    margin-top:2px;
+    font-size:11px;
+    font-weight:500;
+    color:var(--muted);
+  }
+
+  /* In der Kachel-Uebersicht gibt es keine Unterlinks: eine Rasterzelle, die
+     beim Hovern aufklappt, wuerde die ganze Reihe verschieben, und die
+     Unterabschnitte sind ueber die Punkte am Rand und beim Scrollen ohnehin
+     erreichbar. Deshalb hier auch keine Gruppen-Sonderregeln. */
+
+  /* Die Grundregeln setzen bei Hover und Druck die Kurzform background: - die
+     wuerde das Hintergrundbild mit loeschen. Hier deshalb nur Kante und
+     Schleier. */
+  @media (hover:hover){
+    .chapter-overview--tiles a.stack-item:hover{
+      background-color:transparent;
+      border-color:var(--accent-dim);
+    }
+
+    /* Nicht die Kachel bewegt sich, sondern das Bild darin: 6% naeher heran,
+       ueber 0,35s. Der Rahmen bleibt exakt stehen. */
+    .chapter-overview--tiles a.stack-item:hover::before{
+      transform:scale(1.06);
+    }
+
+    .chapter-overview--tiles a.stack-item:hover::after{
+      opacity:0.94;
+    }
+  }
+
+  /* Auf Touch gibt es kein Hover - dort ist der Druck die einzige Gelegenheit,
+     das Bild heranzufahren. */
+  .chapter-overview--tiles a.stack-item:active,
+  .chapter-overview--tiles a.stack-item.is-pressed{
+    background-color:transparent;
+    border-color:var(--accent-dim);
+  }
+
+  .chapter-overview--tiles a.stack-item:active::before,
+  .chapter-overview--tiles a.stack-item.is-pressed::before{
+    transform:scale(1.06);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .chapter-overview--tiles .stack-item::before{transition:none;}
+    .chapter-overview--tiles a.stack-item:hover::before,
+    .chapter-overview--tiles a.stack-item:active::before,
+    .chapter-overview--tiles a.stack-item.is-pressed::before{transform:none;}
   }
 
   .stack-subitem{
@@ -1524,7 +2237,8 @@
     transition:color .15s ease;
   }
 
-  .stack-subitem:active{
+  .stack-subitem:active,
+  .stack-subitem.is-pressed{
     color:var(--accent);
     background:rgba(236,18,121,0.12);
     border-radius:5px;
@@ -1535,6 +2249,7 @@
       color:var(--accent);
     }
   }
+
 
   .placeholder-note{
     margin-top:40px;
@@ -1567,6 +2282,21 @@
     }
 
     /* Hotkey-Zeilen kleiner statt umgebrochen/gestapelt — Bindestrich+Text bleiben in derselben Zeile wie die Tasten */
+    .chapter-overview--tiles .stack-list{
+      grid-template-columns:repeat(2, 1fr);
+      gap:8px;
+    }
+
+    .chapter-overview--tiles .stack-item{
+      min-height:104px;
+      padding:12px 13px;
+      gap:3px;
+    }
+
+    .chapter-overview--tiles .stack-item__label{
+      font-size:13px;
+    }
+
     .hotkey-list{
       column-gap:8px;
       padding:12px 14px;
@@ -1574,6 +2304,38 @@
 
     .hotkey-row__keys{
       gap:5px;
+    }
+
+    /* Eine einzelne Tastenfolge ist zu lang fuer die Rasterspalte und schiebt
+       den Erklaertext aus dem Bild. NUR dieser Block loest deshalb auf schmalen
+       Breiten das Raster auf: Tasten oben, Erklaerung darunter. Alle anderen
+       Bloecke bleiben zweispaltig wie gehabt. */
+    .hotkey-list--gestapelt{
+      display:flex;
+      flex-direction:column;
+      /* align-items:center stammt aus der Raster-Fassung und wuerde im
+         Spalten-Layout jede Zeile waagerecht zentrieren. */
+      align-items:stretch;
+      gap:18px;
+    }
+
+    .hotkey-list--gestapelt .hotkey-row{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:9px;
+    }
+
+    .hotkey-list--gestapelt .hotkey-row__keys{
+      flex-wrap:wrap;
+      row-gap:6px;
+      white-space:normal;
+    }
+
+    /* Der Bindestrich trennt Tasten und Erklaerung. Stehen die untereinander,
+       trennt er nichts mehr und stuende nur als Strich am Zeilenanfang. */
+    .hotkey-list--gestapelt .hotkey-row__text .hkt-dash{
+      display:none;
     }
 
     .keycap{
@@ -1613,11 +2375,11 @@
     }
 
     h1.title{
-      font-size:clamp(1.7rem, 9vw, 2.6rem);
+      font-size:clamp(1.35rem, 6.2vw, 1.9rem);
     }
 
     h2.step__title{
-      font-size:1.1rem;
+      font-size:1.2rem;
     }
 
     /* GIF-Bildunterschrift: Tasten-Kette bricht komplett in eigene Zeile um, wenn es zu eng wird */
@@ -1693,10 +2455,18 @@
       </div>
     </div>
 
-    <button class="sidebar__item" data-page="edit" role="tab" aria-selected="false">
-      <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><circle cx="17.125" cy="17.063" r="7" fill="currentColor"/><circle cx="56.063" cy="16.063" r="7" fill="currentColor"/><circle cx="16.125" cy="54.969" r="7" fill="currentColor"/><circle cx="55.063" cy="54.969" r="7" fill="currentColor"/><path d="M16.526,16.376V55.306H55.456V16.376H16.526Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
-      <span class="sidebar__item-label">Edit Mode</span>
-    </button>
+    <div class="sidebar__group">
+      <button class="sidebar__item" data-page="edit" role="tab" aria-selected="false">
+        <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><circle cx="17.125" cy="17.063" r="7" fill="currentColor"/><circle cx="56.063" cy="16.063" r="7" fill="currentColor"/><circle cx="16.125" cy="54.969" r="7" fill="currentColor"/><circle cx="55.063" cy="54.969" r="7" fill="currentColor"/><path d="M16.526,16.376V55.306H55.456V16.376H16.526Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
+        <span class="sidebar__item-label">Edit Mode</span>
+      </button>
+      <div class="sidebar__sublist">
+        <button class="sidebar__item" data-page="flaechen" role="tab" aria-selected="false">
+          <span class="sidebar__item-icon sidebar__item-icon--sub" aria-hidden="true"><svg viewBox="0 0 71 71" width="8" height="8"><circle cx="35.375" cy="35.469" r="9.844" fill="currentColor"/></svg></span>
+          <span class="sidebar__item-label">Flächen &amp; Kanten</span>
+        </button>
+      </div>
+    </div>
     <button class="sidebar__item" data-page="modifier" role="tab" aria-selected="false">
       <span class="sidebar__item-icon" aria-hidden="true"><svg viewBox="0 0 71 71" width="16" height="16"><path d="M44,9a26.758,26.758,0,0,0-13.188,7.706C25.355,22.837,26.893,33.7,26.893,33.7l-15.14,15.14s-1.9,6.846,2.163,10.814,10.049,0.317,10.049.317l14.058-15.14s11.921,1.685,18.023-4.417c4.476-4.476,6.882-14.529,6.882-14.529l-4.588-4.588L49.165,30.47l-6.117,3.059-4.575-4.474,3.244-6.488,7.978-8.919Z" fill="none" stroke="currentColor" stroke-width="4"/></svg></span>
       <span class="sidebar__item-label">Modifier</span>
@@ -1718,17 +2488,43 @@
     <span class="dot"></span>
     <span class="menu-d__title"><b>3D-LABOR</b><span>Blender Keymap</span></span>
   </div>
+  <button type="button" class="suche-toggle" aria-expanded="false" aria-controls="such-overlay" aria-label="Suchen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+    <span class="suche-toggle__label">Suchen</span>
+  </button>
 </header>
 
+<div class="tile-overlay" id="such-overlay" role="dialog" aria-modal="true" aria-label="Suche" hidden>
+  <button type="button" class="tile-overlay__close" aria-label="Suche schließen">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+
+  <div class="such-inhalt">
+    <div class="such-kopf">
+      <svg class="such-kopf__lupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
+      <input type="search" class="such-feld" placeholder="Taste, Kapitel oder Begriff — z. B. Strg L, Crease, Achse" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Suchbegriff">
+    </div>
+    <p class="such-status" role="status" aria-live="polite"></p>
+    <div class="tile-grid"></div>
+  </div>
+</div>
+
+<nav class="section-dots" aria-label="Abschnitte dieser Seite" hidden></nav>
+
+<button type="button" class="to-top" aria-label="Zum Seitenanfang">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V6"/><path d="M6 12l6-6 6 6"/></svg>
+</button>
+
 <!-- ---------- Seite: Workspace ---------- -->
-<section id="workspace" class="page active">
+<section id="workspace" class="page active" data-gruppe="Grundlagen" data-kurz="Ansicht wechseln, Fenster aufteilen, Arbeitsbereiche organisieren.">
   <div class="eyebrow">Workspace</div>
+
   <h1 class="title">Wechsel zwischen Modi</h1>
   <p class="subtitle">Schnell zwischen Object Mode, Edit Mode und weiteren Workspaces wechseln.</p>
 
   <div class="chapter-overview">
     <div class="stack-list">
-      <a class="stack-item" href="#step-workspace-wechsel"><span class="idx">01</span> Wechsel zwischen verschiedenen Modi</a>
+      <a class="stack-item" href="#step-workspace-wechsel"><span class="idx">01</span> Wechsel zwischen Modi</a>
       <a class="stack-item" href="#step-workspace-search"><span class="idx">02</span> Search Menü</a>
     </div>
   </div>
@@ -1736,8 +2532,8 @@
   <div class="step" id="step-workspace-wechsel">
     <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
 
-    <h2 class="step__title">Wechsel zwischen verschiedenen Modi</h2>
-    <p class="step__desc">Häufig wechselt man schnell zwischen Editier- und Objekt-Modus hin und her. Dafür ist die Tab-Taste sehr praktisch.</p>
+    <h2 class="step__title">Wechsel zwischen Modi</h2>
+    <p class="step__desc">Häufig wechselt man schnell zwischen Editier- und Objekt-Modus hin und her.<br>Dafür ist die Tab-Taste sehr praktisch.</p>
 
     <div class="hotkey-list">
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Tab</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">wechselt zwischen den letzten beiden genutzten Modi</span></span></div>
@@ -1745,7 +2541,7 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/workspace-01-mit-tab-und-strg-tab-zwischen.gif" alt="Animation: Mit Tab und Strg+Tab zwischen Object Mode, Edit Mode und weiteren Modi wechseln">
+        <img decoding="async" loading="lazy" class="contain" src="assets/workspace-01-mit-tab-und-strg-tab-zwischen.gif" alt="Animation: Mit Tab und Strg+Tab zwischen Object Mode, Edit Mode und weiteren Modi wechseln">
       </div>
     </div>
   </div>
@@ -1761,7 +2557,7 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/workspace-02-search-menue-wird-mit-f3-geoeffnet.gif" alt="Animation: Search Menü wird mit F3 geöffnet">
+        <img decoding="async" loading="lazy" class="contain" src="assets/workspace-02-search-menue-wird-mit-f3-geoeffnet.gif" alt="Animation: Search Menü wird mit F3 geöffnet">
       </div>
     </div>
   </div>
@@ -1770,8 +2566,9 @@
 <!-- ---------- Seite 1: Transform ---------- -->
 
 <!-- ---------- Seite: View ---------- -->
-<section id="view" class="page">
+<section id="view" class="page" data-gruppe="Grundlagen" data-kurz="Den Überblick behalten: Ansichten, Sichtbarkeit, Orientierung.">
   <div class="eyebrow">View</div>
+
   <h1 class="title">Orientierung &amp; Sichtbarkeit</h1>
   <p class="subtitle">Werkzeuge, um im Viewport den Überblick zu behalten.</p>
 
@@ -1798,7 +2595,7 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/view-01-fokus-wird-mit-numpad-auf-die.gif" alt="Animation: Fokus wird mit Numpad . auf die Auswahl gesetzt">
+        <img decoding="async" loading="lazy" src="assets/view-01-fokus-wird-mit-numpad-auf-die.gif" alt="Animation: Fokus wird mit Numpad . auf die Auswahl gesetzt">
       </div>
     </div>
   </div>
@@ -1814,7 +2611,7 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/view-02-ausgewaehlte-objekte-werden-mit-numpad-isoliert.gif" alt="Animation: Ausgewählte Objekte werden mit Numpad / isoliert">
+        <img decoding="async" loading="lazy" src="assets/view-02-ausgewaehlte-objekte-werden-mit-numpad-isoliert.gif" alt="Animation: Ausgewählte Objekte werden mit Numpad / isoliert">
       </div>
     </div>
   </div>
@@ -1823,7 +2620,7 @@
     <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
 
     <h2 class="step__title">Quick Favorites</h2>
-    <p class="step__desc">Einige Laptops haben kein Numpad.<br>Hier kann man entweder das Blender-Keyboard-Layout komplett über Edit → Preferences ändern oder einige wenige Funktionen den <i>Quick Favorites</i> zuordnen.</p>
+    <p class="step__desc">Einige Laptops haben kein Numpad.<br>Hier kann man entweder das Blender-Keyboard-Layout komplett über <span class="ui-tag">Edit</span> → <span class="ui-tag">Preferences</span> ändern oder einige wenige Funktionen den <i>Quick Favorites</i> zuordnen.</p>
 
     <div class="hotkey-list">
       <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Add to Quick Favorites</b> - Diesen Menüpunkt den Quick Favorites zuordnen</span></span></div>
@@ -1831,17 +2628,18 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/view-03-quick-favorites-menue-wird-mit-q.gif" alt="Animation: Quick-Favorites-Menü wird mit Q geöffnet">
+        <img decoding="async" loading="lazy" src="assets/view-03-quick-favorites-menue-wird-mit-q.gif" alt="Animation: Quick-Favorites-Menü wird mit Q geöffnet">
       </div>
     </div>
   </div>
 
 </section>
 
-<section id="object" class="page">
+<section id="object" class="page" data-gruppe="Objekte" data-kurz="Verschieben, Rotieren, Skalieren — und Apply Transform.">
   <div class="eyebrow">Transform</div>
+
   <h1 class="title">Grundoperationen</h1>
-  <p class="subtitle">Objekte im Raum transformieren — verschieben, drehen, skalieren.</p>
+  <p class="subtitle">Objekte, Flächen, Kanten, Punkte im Raum verschieben, drehen, skalieren.</p>
 
   <div class="chapter-overview">
     <div class="stack-list">
@@ -1849,12 +2647,18 @@
       <div class="stack-group">
         <a class="stack-item" href="#step-achsen"><span class="idx">02</span> Auf ausgewählte Achsen beschränken</a>
         <div class="stack-subitems">
-          <a class="stack-subitem" href="#substep-eine-achse">Bewegung auf eine Achse beschränken</a>
-          <a class="stack-subitem" href="#substep-zwei-achsen">Bewegung auf zwei Achsen beschränken</a>
+          <a class="stack-subitem" href="#substep-eine-achse">Auf eine Achse beschränken</a>
+          <a class="stack-subitem" href="#substep-zwei-achsen">Auf zwei Achsen beschränken</a>
         </div>
       </div>
       <a class="stack-item" href="#step-massangabe"><span class="idx">03</span> Auf feste Maßangaben beschränken</a>
       <a class="stack-item" href="#step-zuruecksetzen"><span class="idx">04</span> Auf Ausgangsmaße zurückstellen</a>
+      <div class="stack-group">
+        <a class="stack-item" href="#step-werte-kopieren"><span class="idx">05</span> Transform-Werte kopieren</a>
+        <div class="stack-subitems">
+          <a class="stack-subitem" href="#substep-wert-einzeln">Wert auf einzelnes Objekt kopieren</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1870,27 +2674,27 @@
 
     <div class="hotkey-list">
       <div class="hotkey-row"><span class="hotkey-row__keys">
-        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-01-move-symbol.png" alt="Move-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="icon-chip icon-chip--filled"><img decoding="async" loading="lazy" width="50" height="50" src="assets/object-01-move-symbol.png" alt="Move-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
         <span class="keycap">G</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Grab</b> - Objekt frei bewegen
       </span></span></div>
       <div class="hotkey-row"><span class="hotkey-row__keys">
-        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-02-rotate-symbol.png" alt="Rotate-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="icon-chip icon-chip--filled"><img decoding="async" loading="lazy" width="50" height="50" src="assets/object-02-rotate-symbol.png" alt="Rotate-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
         <span class="keycap">R</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Rotate</b> - Objekt frei drehen
       </span></span></div>
       <div class="hotkey-row"><span class="hotkey-row__keys">
-        <span class="icon-chip icon-chip--filled"><img decoding="async" width="50" height="50" src="assets/object-03-scale-symbol.png" alt="Scale-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
+        <span class="icon-chip icon-chip--filled"><img decoding="async" loading="lazy" width="50" height="50" src="assets/object-03-scale-symbol.png" alt="Scale-Symbol" style="width:32px; height:32px; object-fit:contain;"></span>
         <span class="keycap">S</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Scale</b> - Objekt frei skalieren
       </span></span></div>
     </div>
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="crop-center" src="assets/object-04-objekt-wird-mit-g-r-und.gif" alt="Animation: Objekt wird mit G, R und S verschoben, rotiert und skaliert">
+        <img decoding="async" loading="lazy" class="crop-center" src="assets/object-04-objekt-wird-mit-g-r-und.gif" alt="Animation: Objekt wird mit G, R und S verschoben, rotiert und skaliert">
       </div>
     </div>
 
     <figure class="ref-figure">
-      <img decoding="async" width="592" height="326" src="assets/object-05-bezugslinie-vom-origin-zum-mauszeiger-waehrend.png" alt="Bezugslinie vom Origin zum Mauszeiger während einer Transformation">
+      <img decoding="async" loading="lazy" width="592" height="326" src="assets/object-05-bezugslinie-vom-origin-zum-mauszeiger-waehrend.png" alt="Bezugslinie vom Origin zum Mauszeiger während einer Transformation">
       <figcaption>Je weiter man mit der Maus vom Origin (Mittelpunkt) entfernt ist, desto sanfter funktionieren die Bewegungen.</figcaption>
     </figure>
   </div>
@@ -1908,16 +2712,16 @@
     <div class="substep" id="substep-eine-achse">
       <div class="step__title-row" style="margin-bottom:12px;">
         <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/></svg></span>
-        <div class="step__label" style="margin:0;">Bewegung auf eine Achse beschränken</div>
+        <div class="step__label" style="margin:0;">Auf eine Achse beschränken</div>
       </div>
       <div class="hotkey-list">
         <div class="hotkey-row"><span class="hotkey-row__keys">
-          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bewegung auf eine Achse beschränken
+          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Auf eine Achse beschränken
         </span></span></div>
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="crop-bottom" src="assets/object-06-bewegung-wird-mit-x-y-oder.gif" alt="Animation: Bewegung wird mit X, Y oder Z auf eine Achse beschränkt">
+          <img decoding="async" loading="lazy" class="crop-bottom" src="assets/object-06-bewegung-wird-mit-x-y-oder.gif" alt="Animation: Bewegung wird mit X, Y oder Z auf eine Achse beschränkt">
         </div>
       </div>
     </div>
@@ -1925,16 +2729,16 @@
     <div class="substep" id="substep-zwei-achsen" style="margin-top:0;">
       <div class="step__title-row" style="margin-bottom:12px;">
         <span class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="var(--text)" stroke="none"/><line x1="12" y1="12" x2="19" y2="12" stroke="#ff4d4d"/><line x1="12" y1="12" x2="12" y2="5" stroke="#4d9dff"/></svg></span>
-        <div class="step__label" style="margin:0;">Bewegung auf zwei Achsen beschränken</div>
+        <div class="step__label" style="margin:0;">Auf zwei Achsen beschränken</div>
       </div>
-      <div class="hotkey-list">
+      <div class="hotkey-list hotkey-list--gestapelt">
         <div class="hotkey-row"><span class="hotkey-row__keys">
-          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Bewegung auf zwei Achsen beschränken
+          <span class="keycap">G</span><span class="slash">/</span><span class="keycap">R</span><span class="slash">/</span><span class="keycap">S</span> + <span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Auf zwei Achsen beschränken
         </span></span></div>
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="crop-bottom" src="assets/object-07-bewegung-wird-mit-shift-x-shift.gif" alt="Animation: Bewegung wird mit Shift+X, Shift+Y oder Shift+Z auf zwei Achsen beschränkt">
+          <img decoding="async" loading="lazy" class="crop-bottom" src="assets/object-07-bewegung-wird-mit-shift-x-shift.gif" alt="Animation: Bewegung wird mit Shift+X, Shift+Y oder Shift+Z auf zwei Achsen beschränkt">
         </div>
       </div>
     </div>
@@ -1955,33 +2759,23 @@
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/object-08-transformation-wird-durch-direkte-zahleneingabe-auf.gif" alt="Animation: Transformation wird durch direkte Zahleneingabe auf einen exakten Wert festgelegt">
-      </div>
-      <div class="gif-caption">
-        <span class="gif-caption__chain">
-          <span class="keycap" style="width:auto; padding:0 8px;">G</span>
-          <span class="gif-caption__arrow">→</span>
-          <span class="keycap" style="width:auto; padding:0 8px;">X</span>
-          <span class="gif-caption__arrow">→</span>
-          <span class="keycap" style="width:auto; padding:0 8px;">Zahl</span>
-        </span>
+        <img decoding="async" loading="lazy" src="assets/object-08-transformation-wird-durch-direkte-zahleneingabe-auf.gif" alt="Animation: Transformation wird durch direkte Zahleneingabe auf einen exakten Wert festgelegt">
       </div>
     </div>
 
-    <div class="viewport">
-      <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/object-09-ausgewaehlter-bereich-wird-mit-s-x.gif" alt="Animation: Ausgewählter Bereich wird mit S, X/Y/Z und 0 glattgezogen">
+    <div class="substep" id="substep-skalierung-null">
+      <div class="step__label">Skalierung auf 0</div>
+      <p class="step__desc">Wenn man eine Achse auf 0 skaliert, kann man die komplette Auswahl glattziehen (senkrecht zur Skalierungsachse).</p>
+
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys">
+          <span class="keycap">S</span><span class="hotkey-row__arrow">→</span><span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span><span class="hotkey-row__arrow">→</span><span class="keycap">0</span></span></div>
       </div>
-      <div class="gif-caption">
-        <span class="gif-caption__text">Mit</span>
-        <span class="gif-caption__chain">
-          <span class="keycap">S</span>
-          <span class="gif-caption__arrow">→</span>
-          <span class="keycap">X</span><span class="slash">/</span><span class="keycap">Y</span><span class="slash">/</span><span class="keycap">Z</span>
-          <span class="gif-caption__arrow">→</span>
-          <span class="keycap">0</span>
-        </span>
-        <span class="gif-caption__text">kann man den ausgewählten Bereich glatt ziehen (senkrecht zur Transform Orientation)</span>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/object-09-ausgewaehlter-bereich-wird-mit-s-x.gif" alt="Animation: Eine Achse wird auf 0 skaliert, dadurch wird die Auswahl glattgezogen">
+        </div>
       </div>
     </div>
   </div>
@@ -2000,7 +2794,48 @@
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/object-10-transformation-wird-auf-die-ausgangsmasse-zurueckgesetzt.gif" alt="Animation: Transformation wird auf die Ausgangsmaße zurückgesetzt">
+        <img decoding="async" loading="lazy" src="assets/object-10-transformation-wird-auf-die-ausgangsmasse-zurueckgesetzt.gif" alt="Animation: Transformation wird auf die Ausgangsmaße zurückgesetzt">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-werte-kopieren">
+    <div class="step-divider"><span class="step-divider__num">05</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Transform-Werte kopieren</h2>
+    <p class="step__desc">Die Location-, Rotation- und Skalierungs-Werte können vom <a class="inline-link" href="#active-object">aktiven Objekt</a> übernommen werden.</p>
+
+    <div class="hotkey-list hotkey-list--gestapelt">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Copy All to Selected</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Kopiert alle Werte aus diesem Block auf die komplette Auswahl
+      </span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Copy Single to Selected</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Kopiert einen Wert auf die komplette Auswahl
+      </span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/transform_copytoselected.gif" alt="Animation: Transform-Werte werden mit Copy to Selected auf die anderen ausgewählten Objekte übertragen">
+      </div>
+    </div>
+
+    <div class="substep" id="substep-wert-einzeln">
+      <div class="step__label">Wert auf einzelnes Objekt kopieren</div>
+      <p class="step__desc">Um einen Wert zu kopieren, muss die Maus einfach nur über der Schaltfläche sein.</p>
+      <p class="step__desc">Ein Klick ist nicht nötig.</p>
+
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys">
+          <span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">C</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">kopiert den Wert
+        </span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys">
+          <span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">V</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">fügt den Wert ein
+        </span></span></div>
+      </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/transform_strc.gif" alt="Animation: Ein Transform-Wert wird mit Strg+C kopiert und mit Strg+V in ein anderes Feld eingefügt">
+        </div>
       </div>
     </div>
   </div>
@@ -2008,8 +2843,9 @@
 </section>
 
 <!-- ---------- Seite: Selektion ---------- -->
-<section id="selection" class="page">
+<section id="selection" class="page" data-gruppe="Objekte" data-kurz="Objekte und Elemente auswählen, hinzufügen, abziehen.">
   <div class="eyebrow">Selection</div>
+
   <h1 class="title">Auswählen &amp; Abziehen</h1>
   <p class="subtitle">Elemente im Outliner und im 3D-Viewport gezielt zur Auswahl hinzufügen oder daraus entfernen.</p>
 
@@ -2053,7 +2889,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/selection-01-elemente-im-outliner-werden-zur-auswahl.gif" alt="Animation: Elemente im Outliner werden zur Auswahl hinzugefügt">
+          <img decoding="async" loading="lazy" class="contain" src="assets/selection-01-elemente-im-outliner-werden-zur-auswahl.gif" alt="Animation: Elemente im Outliner werden zur Auswahl hinzugefügt">
         </div>
       </div>
     </div>
@@ -2063,7 +2899,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/selection-02-elemente-im-outliner-werden-abgewaehlt.gif" alt="Animation: Elemente im Outliner werden abgewählt">
+          <img decoding="async" loading="lazy" class="contain" src="assets/selection-02-elemente-im-outliner-werden-abgewaehlt.gif" alt="Animation: Elemente im Outliner werden abgewählt">
         </div>
       </div>
     </div>
@@ -2090,7 +2926,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" src="assets/selection-03-objekte-im-object-mode-werden-zur.gif" alt="Animation: Objekte im Object Mode werden zur Auswahl hinzugefügt">
+          <img decoding="async" loading="lazy" src="assets/selection-03-objekte-im-object-mode-werden-zur.gif" alt="Animation: Objekte im Object Mode werden zur Auswahl hinzugefügt">
         </div>
       </div>
     </div>
@@ -2101,7 +2937,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" src="assets/selection-04-objekte-im-object-mode-werden-abgewaehlt.gif" alt="Animation: Objekte im Object Mode werden abgewählt">
+          <img decoding="async" loading="lazy" src="assets/selection-04-objekte-im-object-mode-werden-abgewaehlt.gif" alt="Animation: Objekte im Object Mode werden abgewählt">
         </div>
       </div>
     </div>
@@ -2131,7 +2967,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage">
-            <img decoding="async" class="crop-center" src="assets/selection-05-mit-l-werden-miteinander-verbundene-meshes.gif" alt="Animation: Mit L werden miteinander verbundene Meshes selektiert">
+            <img decoding="async" loading="lazy" class="crop-center" src="assets/selection-05-mit-l-werden-miteinander-verbundene-meshes.gif" alt="Animation: Mit L werden miteinander verbundene Meshes selektiert">
           </div>
         </div>
       </div>
@@ -2142,7 +2978,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage">
-            <img decoding="async" class="crop-center" src="assets/selection-06-mit-shift-l-werden-miteinander-verbundene.gif" alt="Animation: Mit Shift+L werden miteinander verbundene Meshes abgewählt">
+            <img decoding="async" loading="lazy" class="crop-center" src="assets/selection-06-mit-shift-l-werden-miteinander-verbundene.gif" alt="Animation: Mit Shift+L werden miteinander verbundene Meshes abgewählt">
           </div>
         </div>
       </div>
@@ -2165,7 +3001,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage viewport__stage--tall">
-            <img decoding="async" class="contain" src="assets/selection-07-mit-alt-und-shift-alt-linksklick.gif" alt="Animation: Mit Alt und Shift+Alt+Linksklick werden Loops zur Auswahl hinzugefügt">
+            <img decoding="async" loading="lazy" class="contain" src="assets/selection-07-mit-alt-und-shift-alt-linksklick.gif" alt="Animation: Mit Alt und Shift+Alt+Linksklick werden Loops zur Auswahl hinzugefügt">
           </div>
         </div>
       </div>
@@ -2176,7 +3012,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage viewport__stage--tall">
-            <img decoding="async" class="contain" src="assets/selection-08-ein-loop-wird-aus-der-auswahl.gif" alt="Animation: Ein Loop wird aus der Auswahl entfernt">
+            <img decoding="async" loading="lazy" class="contain" src="assets/selection-08-ein-loop-wird-aus-der-auswahl.gif" alt="Animation: Ein Loop wird aus der Auswahl entfernt">
           </div>
         </div>
       </div>
@@ -2187,13 +3023,13 @@
       </div>
         <div class="viewport">
         <div class="viewport__stage viewport__stage--tall">
-          <img decoding="async" class="contain" src="assets/selection-09-offene-kanten-werden-unabhaengig-von-quads.gif" alt="Animation: Offene Kanten werden unabhängig von Quads ausgewählt">
+          <img decoding="async" loading="lazy" class="contain" src="assets/selection-09-offene-kanten-werden-unabhaengig-von-quads.gif" alt="Animation: Offene Kanten werden unabhängig von Quads ausgewählt">
         </div>
       </div>
       </div>
 
       <figure class="ref-figure">
-        <img decoding="async" width="492" height="457" src="assets/selection-10-klickrichtung-vom-flaechenmittelpunkt-aus-bestimmt-den.jpg" alt="Klickrichtung vom Flächenmittelpunkt aus bestimmt den ausgewählten Loop">
+        <img decoding="async" loading="lazy" width="492" height="457" src="assets/Screenie_EdgeLoop.jpg" alt="Klickrichtung vom Flächenmittelpunkt aus bestimmt den ausgewählten Loop">
         <figcaption>Bei Flächen entscheidet die Klickrichtung vom Mittelpunkt aus, welcher Loop ausgewählt wird.</figcaption>
       </figure>
 </div>
@@ -2206,7 +3042,7 @@
     </div>
       <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" src="assets/selection-11-kuerzeste-strecke-zwischen-zwei-elementen-wird.gif" alt="Animation: Kürzeste Strecke zwischen zwei Elementen wird ausgewählt">
+        <img decoding="async" loading="lazy" src="assets/selection-11-kuerzeste-strecke-zwischen-zwei-elementen-wird.gif" alt="Animation: Kürzeste Strecke zwischen zwei Elementen wird ausgewählt">
       </div>
     </div>
     </div>
@@ -2226,7 +3062,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage">
-            <img decoding="async" class="contain" src="assets/selection-12-selektion-wird-mit-strg-numpad-erweitert.gif" alt="Animation: Selektion wird mit Strg+Numpad + erweitert">
+            <img decoding="async" loading="lazy" class="contain" src="assets/selection-12-selektion-wird-mit-strg-numpad-erweitert.gif" alt="Animation: Selektion wird mit Strg+Numpad + erweitert">
           </div>
         </div>
       </div>
@@ -2237,7 +3073,7 @@
         </div>
         <div class="viewport">
           <div class="viewport__stage">
-            <img decoding="async" class="contain" src="assets/selection-13-selektion-wird-mit-strg-numpad-verringert.gif" alt="Animation: Selektion wird mit Strg+Numpad - verringert">
+            <img decoding="async" loading="lazy" class="contain" src="assets/selection-13-selektion-wird-mit-strg-numpad-verringert.gif" alt="Animation: Selektion wird mit Strg+Numpad - verringert">
           </div>
         </div>
       </div>
@@ -2260,7 +3096,7 @@
       </div>
     <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/selection-14-xray-menue-wird-mit-alt-z.gif" alt="Animation: XRay-Menü wird mit Alt+Z aktiviert, um versteckte Bereiche zu selektieren">
+          <img decoding="async" loading="lazy" class="contain" src="assets/selection-14-xray-menue-wird-mit-alt-z.gif" alt="Animation: XRay-Menü wird mit Alt+Z aktiviert, um versteckte Bereiche zu selektieren">
         </div>
       </div>
   </div>
@@ -2273,14 +3109,21 @@
 <!-- ---------- Seite 2: Edit Mode ---------- -->
 
 <!-- ---------- Seite: Active Object ---------- -->
-<section id="active-object" class="page">
+<section id="active-object" class="page" data-gruppe="Objekte" data-kurz="Welches Objekt bei einer Mehrfachauswahl den Ton angibt.">
   <div class="eyebrow">Active Element</div>
+
   <h1 class="title">Aktives Element</h1>
   <p class="subtitle">Bei mehreren ausgewählten Objekten bestimmt das aktive Element, welche Werte angezeigt und verändert werden.</p>
 
   <div class="chapter-overview">
     <div class="stack-list">
-      <a class="stack-item" href="#step-active-object"><span class="idx">01</span> Aktives Element</a>
+      <div class="stack-group">
+        <a class="stack-item" href="#step-active-object"><span class="idx">01</span> Aktives Element</a>
+        <div class="stack-subitems">
+          <a class="stack-subitem" href="#substep-active-alt">Alle Werte gleichzeitig ändern</a>
+          <a class="stack-subitem" href="#substep-active-verlinkung">Verlinkung</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2294,58 +3137,59 @@
     <p class="step__desc">Man wählt ein neues Element als das aktive Element aus, indem man innerhalb der momentanen Auswahl die Shift-Taste gedrückt hält.</p>
 
     <div class="hotkey-list">
-      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Innerhalb einer Auswahl ein neues aktives Element auswählen</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Shift</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Innerhalb einer Auswahl ein neues aktives Element auswählen</span></span></div>
     </div>
 
     <figure class="ref-figure ref-figure--sm">
-      <img decoding="async" width="1584" height="349" src="assets/active_object%20copy.jpg" alt="Aktives Element hervorgehoben: Fläche im Edit Mode, Objekt im 3D-Viewport und Eintrag im Outliner">
+      <img decoding="async" loading="lazy" width="1584" height="349" src="assets/active_object%20copy.jpg" alt="Aktives Element hervorgehoben: Fläche im Edit Mode, Objekt im 3D-Viewport und Eintrag im Outliner">
       <figcaption>Das aktive Element sticht in jedem Kontext anders hervor: Fläche im Edit Mode, Objekt im Viewport, Eintrag im Outliner.</figcaption>
     </figure>
 
-    <div class="step__label">Alle Werte gleichzeitig ändern</div>
-    <p class="step__desc">Wenn man alle Objekte gleichermaßen anpassen möchte, muss man die Alt-Taste gedrückt halten. Das funktioniert für viele Blender-Buttons, aber nicht für alle.</p>
+    <div class="substep" id="substep-active-alt">
+      <div class="step__label">Alle Werte gleichzeitig ändern</div>
+      <p class="step__desc">Wenn man alle Objekte gleichermaßen anpassen möchte, muss man die Alt-Taste gedrückt halten. Das funktioniert für viele Blender-Buttons, aber nicht für alle.</p>
 
-    <div class="callout">
-      <b>Hinweis:</b> Die Modifier müssen alle den gleichen Namen besitzen, wenn man die Alt-Taste benutzen möchte.
-    </div>
+      <div class="callout">
+        <b>Hinweis:</b> Die Modifier müssen alle den gleichen Namen besitzen, wenn man die Alt-Taste benutzen möchte.
+      </div>
 
-    <div class="hotkey-list">
-      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Ändert die Werte in diesem Block für alle ausgewählten Objekte</span></span></div>
-      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Verschiebt die Werte in diesem Block gleichmäßig für alle ausgewählten Objekte</span></span></div>
-    </div>
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Ändert die Werte in diesem Block für alle ausgewählten Objekte</span></span></div>
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="icon-chip" title="Linksklick-Ziehen"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="var(--accent)" fill-rule="evenodd" d="M87,59c2.03,0.876-1.219,16.842,2,22a32.133,32.133,0,0,0,7,8l7-7-1-24-6-6-6,1Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M80,33h29L94,7Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M109.334,150H80.7l14.812,25.944Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M47.5,101.835V73.227l-25.944,14.8Z"/><path fill="var(--accent)" stroke="var(--accent)" stroke-width="2" fill-rule="evenodd" d="M139.5,101.835V73.227l25.944,14.8Z"/></svg></span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Verschiebt die Werte in diesem Block gleichmäßig für alle ausgewählten Objekte</span></span></div>
+      </div>
 
-    <div class="viewport">
-      <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/Transform_altclick_1_2-output.gif" alt="Animation: Mit gedrückter Alt-Taste werden Werte für alle ausgewählten Objekte gleichzeitig geändert und verschoben">
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/Transform_altclick_1_2-output.gif" alt="Animation: Mit gedrückter Alt-Taste werden Werte für alle ausgewählten Objekte gleichzeitig geändert und verschoben">
+        </div>
       </div>
     </div>
 
-    <div class="step__label">Verlinkung</div>
-    <p class="step__desc">Man kann auch noch weitere Eigenschaften vom aktiven Objekt auf andere übertragen, z.B. Materialien, Modifier oder auch alle Transforms gleichzeitig.</p>
-    <p class="step__desc"><span class="ui-tag">Object</span> → <span class="ui-tag">Link/Transfer Data</span></p>
+    <div class="substep" id="substep-active-verlinkung">
+      <div class="step__label">Verlinkung</div>
+      <p class="step__desc">Man kann auch noch weitere Eigenschaften vom aktiven Objekt auf andere übertragen, z.B. Materialien, Modifier oder auch alle Transforms gleichzeitig.</p>
+      <p class="step__desc"><span class="ui-tag">Object</span> → <span class="ui-tag">Link/Transfer Data</span></p>
 
-    <div class="hotkey-list">
-      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">L</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Verlinkungsmenü</span></span></div>
-    </div>
-
-    <div class="viewport">
-      <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/Copy-Link.gif" alt="Animation: Mit Strg+L wird das Verlinkungsmenü geöffnet und eine Eigenschaft auf die ausgewählten Objekte übertragen">
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">L</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">Öffnet das Verlinkungsmenü</span></span></div>
       </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/Copy-Link.gif" alt="Animation: Mit Strg+L wird das Verlinkungsmenü geöffnet und eine Eigenschaft auf die ausgewählten Objekte übertragen">
+        </div>
+      </div>
+
     </div>
 
-    <div class="viewport">
-      <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/transform_copytoselected.gif" alt="Animation: Transform-Werte werden mit Copy to Selected auf die anderen ausgewählten Objekte übertragen">
-      </div>
-    </div>
 
   </div>
 </section>
 
 <!-- ---------- Seite: Apply Transforms ---------- -->
-<section id="apply-transforms" class="page">
+<section id="apply-transforms" class="page" data-gruppe="Objekte" data-kurz="Transform-Werte fest in die Geometrie schreiben.">
   <div class="eyebrow">Apply Transforms</div>
+
   <h1 class="title">Werte in Geometrie überführen</h1>
   <p class="subtitle">Transform-Werte lassen sich jederzeit fest in die Geometrie schreiben — das hat spürbare Auswirkungen auf viele andere Bereiche.</p>
 
@@ -2367,7 +3211,7 @@
     <p class="step__desc">Ein 3D-Objekt besteht aus seiner reinen Form (Geometrie) und seinen Transform-Werten, die im Objekt-Modus gespeichert werden.</p>
 
     <figure class="ref-figure" style="max-width:900px;">
-      <img decoding="async" width="2419" height="1290" src="assets/ApplyScale_Infografik_03_01.jpg" alt="Infografik: Ein Objekt setzt sich aus Geometry (Vertices, Edges, Faces) und Transforms (Location, Rotation, Scale) zusammen">
+      <img decoding="async" loading="lazy" width="2419" height="1290" src="assets/ApplyScale_Infografik_03_01.jpg" alt="Infografik: Ein Objekt setzt sich aus Geometry (Vertices, Edges, Faces) und Transforms (Location, Rotation, Scale) zusammen">
     </figure>
 
     <div class="step__label">2. Transform</div>
@@ -2376,20 +3220,20 @@
     <p class="step__desc">Besonders die Skalierung hat Auswirkungen auf viele andere Bereiche innerhalb von Blender, z.B. können Physiksimulationen doppelt so schnell ablaufen, UVs nicht richtig ausgegeben werden und Sculpting-Brushes verzerrt werden.</p>
 
     <figure class="ref-figure" style="max-width:900px;">
-      <img decoding="async" width="2419" height="2685" src="assets/ApplyScale_Infografik_03_02.jpg" alt="Infografik: Skalieren im Objekt-Modus ändert nur die Skalierungswerte, die Mesh Data bleibt unverändert — mit Auswirkungen auf Physics, Texturing und die Modi">
+      <img decoding="async" loading="lazy" width="2419" height="2685" src="assets/ApplyScale_Infografik_03_02.jpg" alt="Infografik: Skalieren im Objekt-Modus ändert nur die Skalierungswerte, die Mesh Data bleibt unverändert — mit Auswirkungen auf Physics, Texturing und die Modi">
     </figure>
 
     <div class="step__label">3. Apply Transforms</div>
     <p class="step__desc">Dieser Vorgang schreibt die <em>Werte</em> in die <em>Geometrie</em>.</p>
 
     <figure class="ref-figure" style="max-width:900px;">
-      <img decoding="async" width="2419" height="1341" src="assets/ApplyScale_Infografik_03_03.jpg" alt="Infografik: Apply Transforms schreibt die Skalierungswerte fest in die Mesh Data, die Transform-Werte werden zurückgesetzt">
+      <img decoding="async" loading="lazy" width="2419" height="1341" src="assets/ApplyScale_Infografik_03_03.jpg" alt="Infografik: Apply Transforms schreibt die Skalierungswerte fest in die Mesh Data, die Transform-Werte werden zurückgesetzt">
     </figure>
 
     <p class="step__desc">Auch wenn das Objekt erst einmal unverändert aussieht, so ist für Blender erst jetzt aus dem Würfel ein flacher Quader geworden.</p>
 
     <figure class="ref-figure" style="max-width:640px;">
-      <img decoding="async" width="1052" height="686" src="assets/ApplyScale_Infografik_03_04.jpg" alt="Vergleich: der ursprüngliche Würfel neben dem angewendeten, flachen Quader">
+      <img decoding="async" loading="lazy" width="1052" height="686" src="assets/ApplyScale_Infografik_03_04.jpg" alt="Vergleich: der ursprüngliche Würfel neben dem angewendeten, flachen Quader">
     </figure>
 
     <p class="step__desc" style="margin-top:32px;">Mit uniformer Skalierung (z. B. 1,1,1 oder 2,2,2) verhalten sich dieselben Modi wieder wie meistens gewünscht.</p>
@@ -2404,7 +3248,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/apply-transforms-02-mit-uniformer-skalierung-verhalten-sich-edit.gif" alt="Animation: Mit uniformer Skalierung verhalten sich Edit Mode, Sculpt Mode und Modifier wie gewünscht">
+          <img decoding="async" loading="lazy" class="contain" src="assets/apply-transforms-02-mit-uniformer-skalierung-verhalten-sich-edit.gif" alt="Animation: Mit uniformer Skalierung verhalten sich Edit Mode, Sculpt Mode und Modifier wie gewünscht">
         </div>
         <div class="gif-caption">
           <span class="gif-caption__text">Mit uniformer Skalierung (z. B. 1,1,1 oder 2,2,2) verhalten sich dieselben Modi wieder wie meistens gewünscht.</span>
@@ -2416,7 +3260,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/apply-transforms-03-ohne-apply-scale-verhalten-sich-edit.gif" alt="Animation: Ohne Apply Scale verhalten sich Edit Mode, Sculpt Mode und Modifier ungewöhnlich">
+          <img decoding="async" loading="lazy" class="contain" src="assets/apply-transforms-03-ohne-apply-scale-verhalten-sich-edit.gif" alt="Animation: Ohne Apply Scale verhalten sich Edit Mode, Sculpt Mode und Modifier ungewöhnlich">
         </div>
         <div class="gif-caption">
           <span class="gif-caption__text">Verzichtet man auf "Apply Scale", zeigen sich die Anomalien, beispielsweise unregelmäßige Kantenlängen beim Inset im <em>Edit Mode</em>, langgezogene Brushes im <em>Sculpt Mode</em> und unregelmäßige Kantenlängen im <em>Bevel-Modifier</em>.</span>
@@ -2429,22 +3273,17 @@
 </section>
 
 <!-- ---------- Seite: Origin ---------- -->
-<section id="origin" class="page">
+<section id="origin" class="page" data-gruppe="Objekte" data-kurz="Den Origin verschieben — drei Methoden.">
   <div class="eyebrow">Origin</div>
+
   <h1 class="title">Origin verschieben</h1>
   <p class="subtitle">Der Origin ist wichtig für Modifier und häufig der Mittelpunkt einer Bewegung. Hier drei Methoden, wie man ihn verschieben kann.</p>
 
-  <div class="chapter-overview">
+  <div class="chapter-overview chapter-overview--tiles">
     <div class="stack-list">
-      <a class="stack-item" href="#step-origin-editmode"><span class="idx">01</span> Inhalt im Edit Mode verschieben</a>
-      <div class="stack-group">
-        <a class="stack-item" href="#step-origin-objectmenu"><span class="idx">02</span> Objekt Menü</a>
-        <div class="stack-subitems">
-          <a class="stack-subitem" href="#substep-origin-mitte">Origin zum Mittelpunkt verschieben</a>
-          <a class="stack-subitem" href="#substep-origin-3dcursor">Origin zum 3D-Cursor verschieben</a>
-        </div>
-      </div>
-      <a class="stack-item" href="#step-origin-direkt"><span class="idx">03</span> Origin direkt bewegen</a>
+      <a class="stack-item" href="#step-origin-editmode" style="--kachelbild:url(assets/kachel_origin_01.jpg)"><span class="idx">01</span><span class="stack-item__label">Inhalt im Edit Mode verschieben</span></a>
+      <a class="stack-item" href="#step-origin-objectmenu" style="--kachelbild:url(assets/kachel_origin_02.jpg)"><span class="idx">02</span><span class="stack-item__label">Objekt Menü</span></a>
+      <a class="stack-item" href="#step-origin-direkt" style="--kachelbild:url(assets/kachel_origin_03.jpg)"><span class="idx">03</span><span class="stack-item__label">Origin direkt bewegen</span></a>
     </div>
   </div>
 
@@ -2456,7 +3295,7 @@
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/origin-01-der-origin-verschiebt-sich-relativ-zum.gif" alt="Animation: Der Origin verschiebt sich relativ zum Inhalt, wenn Elemente im Edit Mode bewegt werden">
+        <img decoding="async" loading="lazy" class="contain" src="assets/origin-01-der-origin-verschiebt-sich-relativ-zum.gif" alt="Animation: Der Origin verschiebt sich relativ zum Inhalt, wenn Elemente im Edit Mode bewegt werden">
       </div>
     </div>
   </div>
@@ -2470,12 +3309,10 @@
     <div class="substep" id="substep-origin-mitte">
       <div class="step__label">Origin zum Mittelpunkt verschieben</div>
       <p class="step__desc">Verschiebt Origin zum Mittelpunkt aller Elemente des Objekts.</p>
-      <div class="callout">
-        Wenn es schnell gehen soll und der Origin einfach zu weit weggerutscht ist.
-      </div>
+      <p class="step__desc">Praktisch, wenn es schnell gehen soll und der Origin einfach zu weit weggerutscht ist.</p>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/origin-02-origin-wird-ueber-das-objekt-menue.gif" alt="Animation: Origin wird über das Objekt-Menü zum Mittelpunkt verschoben">
+          <img decoding="async" loading="lazy" class="contain" src="assets/origin-02-origin-wird-ueber-das-objekt-menue.gif" alt="Animation: Origin wird über das Objekt-Menü zum Mittelpunkt verschoben">
         </div>
       </div>
     </div>
@@ -2490,7 +3327,7 @@
       </div>
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/origin-03-3d-cursor-wird-mit-shift-rechtsklick.gif" alt="Animation: 3D-Cursor wird mit Shift+Rechtsklick bewegt">
+          <img decoding="async" loading="lazy" class="contain" src="assets/origin-03-3d-cursor-wird-mit-shift-rechtsklick.gif" alt="Animation: 3D-Cursor wird mit Shift+Rechtsklick bewegt">
         </div>
       </div>
     </div>
@@ -2508,32 +3345,301 @@
     </div>
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/origin-04-origin-wird-mit-transform-affect-only.gif" alt="Animation: Origin wird mit Transform Affect Only Origin direkt bewegt">
+        <img decoding="async" loading="lazy" class="contain" src="assets/origin-04-origin-wird-mit-transform-affect-only.gif" alt="Animation: Origin wird mit Transform Affect Only Origin direkt bewegt">
       </div>
     </div>
   </div>
 
 </section>
 
-<section id="edit" class="page">
+<section id="edit" class="page" data-gruppe="Modellierung" data-kurz="Vertices, Edges und Faces bearbeiten.">
   <div class="eyebrow">Edit Mode</div>
+
   <h1 class="title">Vertices, Edges, Faces</h1>
   <p class="subtitle">Im Edit Mode wird nicht das Objekt, sondern seine Geometrie bearbeitet.</p>
 
-  <p class="placeholder-note">Inhalt für Edit Mode folgt — Step-Blöcke wie auf der Object-Mode-Seite hier einfügen.</p>
+  <div class="chapter-overview chapter-overview--tiles">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-edit-ui" style="--kachelbild:url(assets/kachel_edit_ui.jpg)"><span class="idx">01</span><span class="stack-item__label">UI</span></a>
+      <a class="stack-item" href="#step-edit-extrude" style="--kachelbild:url(assets/kachel_edit_extrude.jpg)"><span class="idx">02</span><span class="stack-item__label">Extrude</span></a>
+      <a class="stack-item" href="#step-edit-inset" style="--kachelbild:url(assets/kachel_edit_inset.jpg)"><span class="idx">03</span><span class="stack-item__label">Inset</span></a>
+      <a class="stack-item" href="#step-edit-bevel" style="--kachelbild:url(assets/kachel_edit_bevel.jpg)"><span class="idx">04</span><span class="stack-item__label">Bevel</span></a>
+    </div>
+  </div>
+
+  <div class="step" id="step-edit-ui">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">UI</h2>
+    <p class="step__desc">Im Editiermenü gibt es jede Menge neue Werkzeuge in der Werkzeugleiste. Grün bedeutet, dass Geometrie hinzugefügt wird und rosa, dass sie verformt wird.</p>
+
+    <figure class="ref-figure ref-figure--toolbar">
+      <img decoding="async" loading="lazy" width="1134" height="70" src="assets/edit_UI_00_reihe.png" alt="Die Werkzeuge der Werkzeugleiste im Edit Mode nebeneinander: grüne Symbole fügen Geometrie hinzu, rosa Symbole verformen sie">
+    </figure>
+
+    <p class="step__desc">Einige Buttons haben unten rechts einen kleinen Pfeil. Diese Buttons kann man lange drücken, um mehr Optionen freizuschalten.</p>
+
+    <figure class="ref-figure" style="max-width:340px;">
+      <img decoding="async" loading="lazy" width="224" height="223" src="assets/edit_UI_01.jpg" alt="Aufgeklapptes Menü eines Werkzeug-Buttons mit weiteren Extrude-Optionen">
+    </figure>
+
+    <p class="step__desc">Ebenfalls kann man vorher (1) oder nachher (2) diese Werkzeuge noch individuell anpassen.</p>
+
+    <figure class="ref-figure">
+      <img decoding="async" loading="lazy" width="658" height="705" src="assets/edit_UI_02.jpg" alt="Werkzeug-Optionen: oben in der Kopfleiste vor der Anwendung (1), unten links im Operator-Panel nach der Anwendung (2)">
+    </figure>
+
+    <p class="step__desc">Am unteren Bildschirmrand kann man, während man ein Werkzeug aktiv benutzt, auch die verfügbaren Shortcuts sehen.</p>
+
+    <figure class="ref-figure ref-figure--statusleiste">
+      <img decoding="async" loading="lazy" width="1430" height="88" src="assets/edit_UI_04_zwei.png" alt="Statusleiste am unteren Bildschirmrand mit den Shortcuts des aktiven Werkzeugs: Confirm, Cancel, Precision mode, Snap, Width Type, Width, Segments, Profile Shape, Clamp, Harden, Seam, Sharp, Affect (Edges), Outer (Sharp), Inner (Sharp), Profile Type (Superellipse)">
+    </figure>
+
+    <p class="step__desc">Im Folgenden wird nur auf die wichtigsten Optionen eingegangen.</p>
+  </div>
+
+  <div class="step" id="step-edit-extrude">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Extrude</h2>
+    <p class="step__desc">Zieht neue Flächen aus der Auswahl heraus und verlängert sie.</p>
+
+    <div class="substep" id="substep-extrude-region">
+      <div class="step__label">Extrude Region</div>
+      <p class="step__desc">Extrudiert alles in eine Richtung. Voreingestellt ist die mittlere Ausrichtung aller Flächen. Durch Drücken der Achsen kann das verändert werden.</p>
+
+      <div class="hotkey-list">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">E</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Extrude Region</b> - zieht die Auswahl in eine Richtung heraus</span></span></div>
+      </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/edit_extrude_01.gif" alt="Animation: Mit E wird die Auswahl als Region extrudiert und mit den Achsen ausgerichtet">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-extrude-normals" style="margin-top:0;">
+      <div class="step__label">Extrude along Normals</div>
+      <p class="step__desc">Extrudiert jede Fläche entlang ihrer eigenen Ausrichtung und lässt sie verbunden.</p>
+
+      <div class="hotkey-list hotkey-list--gestapelt">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">E</span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Extrude Along Normals</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">extrudiert entlang der Normalen</span></span></div>
+      </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/edit_extrude_02normals.gif" alt="Animation: Mit Alt+E wird über das Menü Extrude Along Normals extrudiert">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-extrude-individual" style="margin-top:0;">
+      <div class="step__label">Extrude Individual</div>
+      <p class="step__desc">Extrudiert jede Fläche einzeln in ihre Richtung.</p>
+
+      <div class="hotkey-list hotkey-list--gestapelt">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">E</span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Extrude Individual</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">extrudiert jede Fläche einzeln</span></span></div>
+      </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/edit_extrude_03individual.gif" alt="Animation: Mit Alt+E wird über das Menü Extrude Individual jede Fläche einzeln extrudiert">
+        </div>
+      </div>
+    </div>
+
+    <div class="substep" id="substep-extrude-manifold" style="margin-top:0;">
+      <div class="step__label">Extrude Manifold</div>
+      <p class="step__desc">Extrudiert nach innen und subtrahiert die Auswahl.</p>
+
+      <div class="hotkey-list hotkey-list--gestapelt">
+        <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">E</span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Extrude Manifold</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">extrudiert nach innen und subtrahiert</span></span></div>
+      </div>
+
+      <div class="viewport">
+        <div class="viewport__stage">
+          <img decoding="async" loading="lazy" class="contain" src="assets/edit_extrude_04_manifold.gif" alt="Animation: Mit Alt+E wird über das Menü Extrude Manifold nach innen extrudiert und die Auswahl subtrahiert">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-edit-inset">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Inset</h2>
+    <p class="step__desc">Setzt neue Flächen in eine Auswahl rein.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">I</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Inset Faces</b> - setzt Flächen in die Auswahl und verbindet sie</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys">2 × <span class="keycap">I</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Inset Individually</b> - setzt in jede einzelne Fläche eine neue rein</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_inset_01.gif" alt="Animation: Mit I werden neue Flächen in die Auswahl gesetzt, mit zweimal I in jede Fläche einzeln">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-edit-bevel">
+    <div class="step-divider"><span class="step-divider__num">04</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Bevel</h2>
+    <p class="step__desc">Rundet Kanten ab oder fügt auf gerader Strecke neue Loops hinzu.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">B</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Bevel</b> - rundet Kanten ab</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 10px;">Mausrad</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">fügt mehr Kanten hinzu</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_bevel.gif" alt="Animation: Mit Strg+B wird eine Kante abgerundet, das Mausrad fügt weitere Kanten hinzu">
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section id="flaechen" class="page" data-gruppe="Modellierung" data-kurz="Flächen und Kanten erzeugen, füllen und trennen.">
+  <div class="eyebrow">Flächen &amp; Kanten</div>
+
+  <h1 class="title">Geometrie erzeugen und trennen</h1>
+  <p class="subtitle">Flächen zwischen Kanten schließen, offene Bereiche füllen und Verbundenes wieder auftrennen.</p>
+
+  <div class="chapter-overview chapter-overview--tiles">
+    <div class="stack-list">
+      <a class="stack-item" href="#step-face" style="--kachelbild:url(assets/kachel_edit_F.jpg)"><span class="idx">01</span><span class="stack-item__label">Face hinzufügen</span></a>
+      <a class="stack-item" href="#step-gridfill" style="--kachelbild:url(assets/kachel_edit_Gridfill.jpg)"><span class="idx">02</span><span class="stack-item__label">Grid Fill</span></a>
+      <a class="stack-item" href="#step-fillmesh" style="--kachelbild:url(assets/kachel_edit_FillMeshAddon.jpg)"><span class="idx">03</span><span class="stack-item__label">Fill Mesh</span></a>
+      <a class="stack-item" href="#step-bridge" style="--kachelbild:url(assets/kachel_edit_bridgeedge.jpg)"><span class="idx">04</span><span class="stack-item__label">Bridge Edges</span></a>
+      <a class="stack-item" href="#step-rip" style="--kachelbild:url(assets/kachel_edit_rip.jpg)"><span class="idx">05</span><span class="stack-item__label">Rip</span></a>
+      <a class="stack-item" href="#step-split" style="--kachelbild:url(assets/kachel_edit_split.jpg)"><span class="idx">06</span><span class="stack-item__label">Split</span></a>
+    </div>
+  </div>
+
+  <div class="step" id="step-face">
+    <div class="step-divider"><span class="step-divider__num">01</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Face hinzufügen</h2>
+    <p class="step__desc">Fügt eine Fläche zwischen zwei ausgewählten Kanten hinzu oder erzeugt eine neue Kante aus zwei ausgewählten Punkten.</p>
+    <p class="step__desc">Wenn man eine Kante oder einen Punkt auswählt, die zu einer Fläche gehören, erzeugt der Shortcut eine Fläche zwischen den anliegenden Kanten.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">F</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">fügt Fläche, Kante hinzu</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_F.gif" alt="Animation: Mit F wird zwischen den ausgewählten Punkten eine Fläche bzw. Kante erzeugt">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-gridfill">
+    <div class="step-divider"><span class="step-divider__num">02</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Grid Fill</h2>
+    <p class="step__desc">Erzeugt aus verbundenen offenen Kanten eine automatische Füllung aus Quads.</p>
+    <p class="step__desc"><b>Hinweis:</b> funktioniert nur bei einer regelmäßigen Anzahl offener Kanten zuverlässig.</p>
+
+    <div class="hotkey-list hotkey-list--gestapelt">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Strg</span> + <span class="keycap">F</span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Grid Fill</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">fügt ein Gitternetz aus Quads hinzu</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_Gridfill.gif" alt="Animation zum Werkzeug Grid Fill">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-fillmesh">
+    <div class="step-divider"><span class="step-divider__num">03</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Fill Mesh</h2>
+    <p class="step__desc">Eine Blender-Extension, die man über <span class="ui-tag">Edit</span> → <span class="ui-tag">Preferences</span> installieren kann.</p>
+    <p class="step__desc">Fügt eine intelligente Füllung aus Quads bei unregelmäßiger Anzahl offener Kanten hinzu.</p>
+
+    <div class="hotkey-list hotkey-list--gestapelt">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="ui-tag">Sidebar</span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Repair Notches</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">fügt intelligente Füllung hinzu</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_FillMeshAddon.gif" alt="Animation zum Add-on Fill Mesh">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-bridge">
+    <div class="step-divider"><span class="step-divider__num">04</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Bridge Edges</h2>
+    <p class="step__desc">Verbindet zwei Edge-Loops miteinander.</p>
+    <p class="step__desc">Vorher auswählen mit <span class="keycap" style="width:auto; padding:0 6px; font-size:10px; vertical-align:middle;">Alt</span> + <span class="icon-chip" title="Linksklick" style="width:24px; height:24px; vertical-align:middle;"><svg viewBox="0 0 186 186" width="18" height="18"><path fill="var(--accent)" fill-rule="evenodd" d="M94,43l1,10s-7.5,2.7-7,6,0,20,0,20l7,12-1,5H60s-4.7-31.7,3-39S86,44,86,44Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span>.</p>
+
+    <div class="hotkey-list hotkey-list--gestapelt">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="icon-chip" title="Rechtsklick"><svg viewBox="0 0 186 186" width="36" height="36"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span><span class="hotkey-row__arrow">→</span><span class="ui-tag">Bridge Edge Loops</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body">verbindet Edge-Loops</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_bridgeedge.gif" alt="Animation zum Werkzeug Bridge Edge Loops">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-rip">
+    <div class="step-divider"><span class="step-divider__num">05</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Rip</h2>
+    <p class="step__desc"><span class="ui-tag">Rip</span> schneidet Kanten auf. <span class="ui-tag">Rip Fill</span> fügt automatisch eine Fläche hinzu.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">V</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Rip</b> – schneidet Kanten auf</span></span></div>
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap" style="width:auto; padding:0 8px;">Alt</span> + <span class="keycap">V</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Rip Fill</b> – fügt automatisch eine Fläche hinzu</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_rip.gif" alt="Animation zum Werkzeug Rip">
+      </div>
+    </div>
+  </div>
+
+  <div class="step" id="step-split">
+    <div class="step-divider"><span class="step-divider__num">06</span><span class="step-divider__line"></span></div>
+
+    <h2 class="step__title">Split</h2>
+    <p class="step__desc">Trennt miteinander verbundene Flächen voneinander, ohne ein neues Objekt zu erstellen.</p>
+
+    <div class="hotkey-list">
+      <div class="hotkey-row"><span class="hotkey-row__keys"><span class="keycap">Y</span></span><span class="hotkey-row__text"><span class="hkt-dash">-</span><span class="hkt-body"><b>Split</b> – trennt Flächen voneinander</span></span></div>
+    </div>
+
+    <div class="viewport">
+      <div class="viewport__stage">
+        <img decoding="async" loading="lazy" class="contain" src="assets/edit_split.gif" alt="Animation zum Werkzeug Split">
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ---------- Seite 3: Modifier ---------- -->
-<section id="modifier" class="page">
+<section id="modifier" class="page" data-gruppe="Modellierung" data-kurz="Nicht-destruktive Operationen auf dem Objekt stapeln.">
   <div class="eyebrow">Modifier</div>
+
   <h1 class="title">Modifier Stack</h1>
   <p class="subtitle">Nicht-destruktive Operationen, die sich auf das Objekt stapeln lassen.</p>
 
-  <div class="chapter-overview">
+  <div class="chapter-overview chapter-overview--tiles">
     <div class="stack-list">
-      <a class="stack-item" href="#step-mod-subdivision"><span class="idx">01</span> Subdivision</a>
-      <div class="stack-item"><span class="idx">02</span> Mirror</div>
-      <div class="stack-item"><span class="idx">03</span> Bevel</div>
+      <a class="stack-item" href="#step-mod-subdivision" style="--kachelbild:url(assets/kachel_mod_subdivision.jpg)"><span class="idx">01</span><span class="stack-item__label">Subdivision</span></a>
+      <div class="stack-item stack-item--leer"><span class="idx">02</span><span class="stack-item__label">Mirror</span><span class="stack-item__hint">folgt</span></div>
+      <div class="stack-item stack-item--leer"><span class="idx">03</span><span class="stack-item__label">Bevel</span><span class="stack-item__hint">folgt</span></div>
     </div>
   </div>
 
@@ -2549,17 +3655,18 @@
 
     <div class="viewport">
       <div class="viewport__stage">
-        <img decoding="async" class="contain" src="assets/modifier-01-subdivision-surface-modifier-wird-auf-ein.gif" alt="Animation: Subdivision Surface Modifier wird auf ein Objekt angewendet">
+        <img decoding="async" loading="lazy" class="contain" src="assets/modifier-01-subdivision-surface-modifier-wird-auf-ein.gif" alt="Animation: Subdivision Surface Modifier wird auf ein Objekt angewendet">
       </div>
     </div>
 
     <div class="substep">
       <div class="step__label">Crease</div>
-      <p class="step__desc" style="margin-bottom:16px;">Ausgewählte Kanten und Punkte können entweder mit <span class="ui-tag">Edge Crease</span> oder <span class="ui-tag">Vertex Crease</span> scharf gezeichnet werden.<br>Man kann sich das Modell mit <span class="icon-chip" title="Rechtsklick" style="width:26px; height:26px; vertical-align:middle;"><svg viewBox="0 0 186 186" width="20" height="20"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span> → <span class="ui-tag">Shade Auto Smooth</span> mit glatter Oberfläche anzeigen lassen.</p>
+      <p class="step__desc" style="margin-bottom:16px;">Ausgewählte Kanten und Punkte können entweder mit <span class="ui-tag">Edge Crease</span> oder <span class="ui-tag">Vertex Crease</span> scharf gezeichnet werden.</p>
+      <p class="step__desc" style="margin-bottom:16px;">Man kann sich das Modell mit <span class="icon-chip" title="Rechtsklick" style="width:26px; height:26px; vertical-align:middle;"><svg viewBox="0 0 186 186" width="20" height="20"><path fill="var(--accent)" d="M96,44l-1,9s4.333,1,6,9,0,21,0,21l-5,9,11,4,24-2s2.333-25.667-4-34-21-15-21-15Z"/><path fill="none" stroke="currentColor" stroke-width="6.35" stroke-linejoin="round" d="M58,72v34c0,13.251,7.833,35,36,35s37-23.667,37-35V72s-0.667-29-37-29S58,72,58,72Z"/><path fill="none" stroke="currentColor" stroke-width="7" d="M60,95h71"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,53s6,0.566,6,9V81s-0.637,6-5,6"/><path fill="none" stroke="currentColor" stroke-width="7" d="M95,43V53s-7,1.107-7,5V81s2.042,6.583,7,7v7"/></svg></span> → <span class="ui-tag">Shade Auto Smooth</span> mit glatter Oberfläche anzeigen lassen.</p>
 
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/modifier-02-kanten-und-punkte-werden-mit-edge.gif" alt="Animation: Kanten und Punkte werden mit Edge Crease bzw. Vertex Crease scharf gezeichnet">
+          <img decoding="async" loading="lazy" class="contain" src="assets/modifier-02-kanten-und-punkte-werden-mit-edge.gif" alt="Animation: Kanten und Punkte werden mit Edge Crease bzw. Vertex Crease scharf gezeichnet">
         </div>
       </div>
     </div>
@@ -2570,12 +3677,12 @@
 
       <div class="viewport">
         <div class="viewport__stage">
-          <img decoding="async" class="contain" src="assets/modifier-03-artefakte-durch-triangles-ngons-beim-subdivision.gif" alt="Animation: Artefakte durch Triangles/Ngons beim Subdivision Modeling">
+          <img decoding="async" loading="lazy" class="contain" src="assets/modifier-03-artefakte-durch-triangles-ngons-beim-subdivision.gif" alt="Animation: Artefakte durch Triangles/Ngons beim Subdivision Modeling">
         </div>
       </div>
 
-      <figure class="ref-figure">
-        <img decoding="async" width="742" height="390" src="assets/modifier-04-triangle-3-vertices-quad-4-vertices.png" alt="Triangle (3 Vertices), Quad (4 Vertices) und NGon (5+ Vertices) im Vergleich">
+      <figure class="ref-figure ref-figure--sm">
+        <img decoding="async" loading="lazy" width="742" height="390" src="assets/modifier-04-triangle-3-vertices-quad-4-vertices.png" alt="Triangle (3 Vertices), Quad (4 Vertices) und NGon (5+ Vertices) im Vergleich">
         <figcaption>Triangles (3 Punkte) und NGons (5+ Punkte) sind anfällig für Artefakte beim Subdivision Modeling, Quads (4 Punkte) nicht.</figcaption>
       </figure>
     </div>
@@ -2600,15 +3707,29 @@
 
       const substeps = step.querySelectorAll(':scope > .substep');
       substeps.forEach(sub => sub.classList.remove('stripe-odd', 'stripe-even', 'color-split-start'));
-      const descEl = step.querySelector(':scope > .step__desc');
-      if (descEl) descEl.classList.remove('has-color-split');
+      step.classList.remove('no-bottom-pad', 'vorspann-luft');
 
-      step.classList.remove('no-bottom-pad');
-
-      if (substeps.length > 1) {
+      // Schon ab EINEM Unterabschnitt - sonst saehe ein alleinstehendes Submenue
+      // anders aus als eines mit Geschwistern (kein Punkt-Marker, kein eigenes
+      // Band); genau das war bei "Skalierung auf 0" der Fall. Ein einzelner
+      // Unterabschnitt OHNE Beschriftung bleibt aber unbehandelt: dort ist der
+      // .substep nur eine Klammer, und ein Punkt-Marker ohne Ueberschrift
+      // daneben waere ein Marker ohne Aussage.
+      const einzelnMitTitel = substeps.length === 1 && substeps[0].querySelector(':scope > .step__label');
+      if (substeps.length > 1 || einzelnMitTitel) {
         step.classList.add('no-bottom-pad');
-        if (descEl) descEl.classList.add('has-color-split');
         substeps[0].classList.add('color-split-start');
+
+        // Steht zwischen Ueberschrift und erstem Unterabschnitt noch etwas
+        // Eigenes (Einleitungssatz, Bild, Tastenblock), endet dort ein Block
+        // und bekommt unten Luft. Folgt der Unterabschnitt direkt auf die
+        // Ueberschrift, waere die Luft nur ein Loch.
+        const davor = substeps[0].previousElementSibling;
+        const nurUeberschrift = !davor
+          || davor.classList.contains('step-divider')
+          || davor.classList.contains('step__title-row')
+          || davor.tagName === 'H2';
+        if (!nurUeberschrift) step.classList.add('vorspann-luft');
 
         substeps.forEach((sub, idx) => {
           sub.classList.add(i % 2 === 0 ? 'stripe-odd' : 'stripe-even');
@@ -2724,7 +3845,10 @@
     // Ein voruebergehender Fehler nimmt ihn NICHT mehr weg.
     btn.hidden = !HAS_IMAGE_DECODER || stage.dataset.gifDead === '1' || stage.dataset.gifNoData === '1';
     const paused = !!(p && p.userPaused);
-    btn.innerHTML = paused ? ICON_PLAY : ICON_PAUSE;
+    // Frueher wurde hier das SVG per innerHTML ausgetauscht. Wird ein Knopf
+    // waehrend des Antippens neu aufgebaut, bleibt auf Touch-Geraeten sein
+    // Gedrueckt-Zustand haengen - der Knopf blieb rosa. Jetzt stecken beide
+    // Symbole fest im Knopf und nur eine Klasse entscheidet, welches man sieht.
     btn.title = paused ? 'Abspielen' : 'Pause';
     btn.setAttribute('aria-label', btn.title);
     stage.classList.toggle('is-paused', paused);
@@ -2852,7 +3976,33 @@
     startLoop(p);
   }
 
-  async function buildPlayer(stage) {
+  // Mehrfaches schnelles Druecken loeste frueher mehrere Aufbauten gleichzeitig
+  // aus. Jeder legte eine eigene Leinwand an und startete eine eigene Schleife -
+  // das Ergebnis waren zwei uebereinanderliegende, unterschiedlich weit gelaufene
+  // GIFs. Jetzt teilt sich jeder weitere Aufruf denselben laufenden Aufbau.
+  const buildLocks = new Map();
+
+  function buildPlayer(stage) {
+    const laeuft = buildLocks.get(stage);
+    if (laeuft) return laeuft;
+    const pr = buildPlayerInner(stage);
+    buildLocks.set(stage, pr);
+    pr.then(() => buildLocks.delete(stage), () => buildLocks.delete(stage));
+    return pr;
+  }
+
+  async function buildPlayerInner(stage) {
+    // Einen etwaigen Vorgaenger zuerst stilllegen, sonst zeichnet dessen
+    // Schleife weiter auf eine Leinwand, die niemand mehr verwaltet.
+    const alt = gifPlayers.get(stage);
+    if (alt) {
+      alt.dead = true;
+      alt.running = false;
+      cancelAnimationFrame(alt.raf);
+      try { alt.dec.close(); } catch (e) {}
+      gifPlayers.delete(stage);
+    }
+
     const img = stage.querySelector('img');
     const src = gifSrcOf(img);
     if (!HAS_IMAGE_DECODER || !src) throw new Error('kein Decoder');
@@ -2872,7 +4022,9 @@
 
     // Vorhandenes Canvas und vorhandene Leiste weiterbenutzen, falls dies ein
     // Wiederaufbau ist - so verschwindet fuer den Betrachter nie etwas.
+    // Uebriggebliebene Leinwaende aus frueheren Aufbauten wegraeumen
     const canvas = stage.querySelector('canvas') || document.createElement('canvas');
+    stage.querySelectorAll('canvas').forEach((c) => { if (c !== canvas) c.remove(); });
     canvas.className = img.className; // erbt contain / zoom-crop / crop-right
     const p = {
       stage, img, canvas, ctx: canvas.getContext('2d'), dec,
@@ -2888,6 +4040,7 @@
     if (!canvas.parentNode) stage.insertBefore(canvas, stage.firstChild);
 
     let bar = stage.querySelector('.gif-progress');
+    stage.querySelectorAll('.gif-progress').forEach((el) => { if (el !== bar) el.remove(); });
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'gif-progress';
@@ -3028,7 +4181,9 @@
       fallbackRestart(stage);
     }));
 
-    const play = mk('gif-btn--play', ICON_PAUSE, 'Pause', () => {
+    const play = mk('gif-btn--play',
+      '<span class="gif-ic gif-ic--pause">' + ICON_PAUSE + '</span>' +
+      '<span class="gif-ic gif-ic--play">' + ICON_PLAY + '</span>', 'Pause', () => {
       const p = gifPlayers.get(stage);
       if (p) {
         if (p.userPaused) playerPlay(p, true); else playerPause(p, true);
@@ -3126,12 +4281,10 @@
     });
   });
 
-  // Kapitelübersicht-Links: einheitlicher Scroll-Versatz auf allen Seiten.
-  // Links mit Unterpunkten: auf Touch-Geräten klappt der erste Tap nur auf,
-  // erst ein zweiter Tap (oder ein Link ohne Unterpunkte) springt.
+  // Kapiteluebersicht-Links: einheitlicher Scroll-Versatz auf allen Seiten.
   const SCROLL_OFFSET = 56;
   let pendingJumpCheck = null; // verhindert, dass sich überlappende Sprung-Nachkorrekturen gegenseitig überschreiben
-  let jumpScrollLock = false; // verhindert, dass eine Kapitelgruppe während eines aktiven Sprungs einklappt und den Inhalt darunter verschiebt (Bounce-Effekt)
+  let jumpScrollLock = false;  // verhindert, dass eine Gruppe waehrend eines laufenden Sprungs einklappt und den Inhalt darunter verschiebt (Bounce-Effekt)
   async function jumpTo(link) {
     jumpScrollLock = true;
     setTimeout(() => { jumpScrollLock = false; }, 1200);
@@ -3202,11 +4355,77 @@
       // der Pfeil klappt die Unterlinks nur auf bzw. wieder zu (kein Sprung),
       // ein Druck auf die Schrift springt sofort zum Kapitel.
       if (group && link.classList.contains('stack-item') && isNarrow && onArrow) {
-        group.classList.toggle('expanded');
+        setGroupExpanded(group, !group.classList.contains('expanded'));
         return;
       }
 
       jumpTo(link);
+    });
+  });
+
+  // Eine einzige Stelle, an der auf-/zugeklappt wird — von Hover und Pfeil-Tap
+  // gemeinsam benutzt. Die Hoehe muss als echter Pixelwert durch die Transition
+  // laufen ('auto' laesst sich nicht animieren), also messen wir die
+  // tatsaechliche Hoehe und setzen sie nur fuer die Dauer der Bewegung inline.
+  const NAV_REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function setGroupExpanded(group, open) {
+    if (!group) return;
+    const list = group.querySelector(':scope > .stack-subitems');
+    if (!list) { group.classList.toggle('expanded', open); return; }
+    if (group.classList.contains('expanded') === open) return;
+
+    clearTimeout(list._animTimer);
+
+    if (NAV_REDUCED_MOTION.matches) {
+      list.style.maxHeight = '';
+      group.classList.toggle('expanded', open);
+      return;
+    }
+
+    if (open) {
+      // Zielhoehe bei ABGESCHALTETER Transition messen - sonst liefert
+      // scrollHeight die Hoehe mitten in der laufenden Bewegung (die Polster
+      // stehen dann noch auf 0) und die Liste macht am Ende einen Sprung.
+      list.style.transition = 'none';
+      group.classList.add('expanded');
+      list.style.maxHeight = 'none';
+      const target = list.scrollHeight;
+      list.style.maxHeight = '0px';
+      list.style.marginTop = '0px';
+      list.style.paddingTop = '0px';
+      list.style.paddingBottom = '0px';
+      void list.offsetHeight; // Zwischenstand erzwingen, sonst faengt die Transition gar nicht erst an
+      list.style.transition = '';
+      list.style.maxHeight = target + 'px';
+      list.style.marginTop = '';
+      list.style.paddingTop = '';
+      list.style.paddingBottom = '';
+      list._animTimer = setTimeout(() => { list.style.maxHeight = ''; }, 260);
+    } else {
+      list.style.maxHeight = list.scrollHeight + 'px';
+      void list.offsetHeight;
+      group.classList.remove('expanded');
+      list.style.maxHeight = ''; // faellt auf die 0 aus dem Basis-Regelsatz zurueck und laeuft dorthin
+    }
+  }
+
+  // Aufklappen der Unterlinks JS-gesteuert statt rein per CSS :hover:
+  // Sofort beim Betreten aufklappen (kein Warten auf eine Maus-Transition),
+  // und beim Verlassen erst nach kurzer Verzoegerung wieder einklappen —
+  // das verzeiht ungenaue Mausbewegungen auf dem Weg zum Unterlink.
+  document.querySelectorAll('.stack-group').forEach(group => {
+    let collapseTimer = null;
+    const hoverActive = () => window.matchMedia('(min-width:641px)').matches;
+    group.addEventListener('mouseenter', () => {
+      if (!hoverActive()) return; // auf schmalen Breiten steuert nur der Pfeil das Auf-/Zuklappen
+      clearTimeout(collapseTimer);
+      setGroupExpanded(group, true);
+    });
+    group.addEventListener('mouseleave', () => {
+      if (!hoverActive()) return;
+      if (jumpScrollLock) return; // waehrend eines aktiven Sprungs nicht einklappen
+      collapseTimer = setTimeout(() => setGroupExpanded(group, false), 400);
     });
   });
 
@@ -3237,20 +4456,41 @@
   // das verzeiht ungenaue Mausbewegungen auf dem Weg zum Unterlink und
   // verhindert, dass ein Klick auf eine bereits wieder eingeklappte
   // (und damit falsch positionierte) Stelle trifft.
-  document.querySelectorAll('.stack-group').forEach(group => {
-    let collapseTimer = null;
-    const hoverActive = () => window.matchMedia('(min-width:641px)').matches;
-    group.addEventListener('mouseenter', () => {
-      if (!hoverActive()) return; // auf schmalen Breiten steuert nur der Pfeil das Auf-/Zuklappen
-      clearTimeout(collapseTimer);
-      group.classList.add('expanded');
+
+
+  // ---------- Gedrueckt-Zustand auf Touch laenger halten ----------
+  // :active dauert genau so lange wie die Beruehrung. Ein zuegiger Tipper liegt
+  // oft unter 100 ms - die Rueckmeldung blitzt dann nur auf und wirkt, als waere
+  // gar nichts passiert. Auf Touch setzen wir deshalb eine eigene Klasse und
+  // nehmen sie fruehestens nach MIN_PRESS_MS wieder weg; die vorhandenen
+  // Farbuebergaenge (.15s) blenden sie danach weich aus. Zusammen liegt die
+  // sichtbare Rueckmeldung damit bei rund 400 ms - die Groessenordnung, die
+  // Android und iOS ebenfalls verwenden.
+  // Beim Scrollen bricht der Browser die Zeigergeste mit pointercancel ab; dann
+  // verschwindet der Zustand sofort, denn eine Wischbewegung war kein Druck.
+  const PRESS_SELECTOR = 'a, button, .stack-item, .stack-subitem, .sidebar__item, .gif-btn';
+  const MIN_PRESS_MS = 250;
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return; // mit Maus reicht :active
+    const el = e.target && e.target.closest && e.target.closest(PRESS_SELECTOR);
+    if (!el) return;
+    clearTimeout(el._pressTimer);
+    el._pressedAt = performance.now();
+    el.classList.add('is-pressed');
+  }, true);
+
+  function releasePress(sofort) {
+    document.querySelectorAll('.is-pressed').forEach((el) => {
+      clearTimeout(el._pressTimer);
+      const rest = sofort ? 0 : Math.max(0, MIN_PRESS_MS - (performance.now() - (el._pressedAt || 0)));
+      if (rest === 0) el.classList.remove('is-pressed');
+      else el._pressTimer = setTimeout(() => el.classList.remove('is-pressed'), rest);
     });
-    group.addEventListener('mouseleave', () => {
-      if (!hoverActive()) return;
-      if (jumpScrollLock) return; // während eines aktiven Sprungs nicht einklappen (verhindert Layout-Verschiebung mitten in der Scroll-Animation)
-      collapseTimer = setTimeout(() => group.classList.remove('expanded'), 400);
-    });
-  });
+  }
+
+  document.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') releasePress(false); }, true);
+  document.addEventListener('pointercancel', (e) => { if (e.pointerType === 'touch') releasePress(true); }, true);
 
 
   /* ---------- Sidebar-Navigation (aus preview_menu_sidebar_v38) ---------- */
@@ -3842,10 +5082,458 @@
       });
     }, SWIPE_OUT_MS);
   });
+
+
+  // ---------- Suche ----------
+  // Ein Nachschlagewerk lebt davon, dass man eine Taste eingeben kann und die
+  // Stelle findet - deshalb durchsucht der Index nicht nur Ueberschriften und
+  // Fliesstext, sondern vor allem die Tastenkappen selbst und die Namen der
+  // Blender-Menuepunkte. "strg l" oder "crease" fuehrt damit direkt zum Ziel.
+  //
+  // Die Ergebnisse erscheinen im selben Overlay, das vorher das Kachelmenue
+  // war: leeres Feld zeigt weiterhin alle Kapitel, Tippen ersetzt sie durch
+  // Treffer. Bewusst ein Overlay und keine eigene Seite - eine Suche ist ein
+  // Nachschlagen, kein Ziel; das gelesene Kapitel bleibt dahinter stehen.
+  (function initSuche(){
+    const toggle   = document.querySelector('.suche-toggle');
+    const overlay  = document.getElementById('such-overlay');
+    const grid     = overlay && overlay.querySelector('.tile-grid');
+    const feld     = overlay && overlay.querySelector('.such-feld');
+    const status   = overlay && overlay.querySelector('.such-status');
+    const closeBtn = overlay && overlay.querySelector('.tile-overlay__close');
+    const nav      = document.querySelector('.sidebar__nav');
+    if (!toggle || !overlay || !grid || !feld || !nav) return;
+
+    const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Umlaute raus, damit "menue" auch "Menü" findet. Rechenzeichen werden zu
+    // eigenen Woertern, sonst faellt "+" beim Saeubern weg und die Taste
+    // "Numpad +" waere ueber ihr eigenes Zeichen nicht auffindbar. Weil Index
+    // und Eingabe durch dieselbe Muehle laufen, passt beides zusammen.
+    const ZEICHEN = { '+': 'plus', '-': 'minus', '/': 'geteilt', '*': 'mal', '.': 'punkt', ',': 'komma' };
+    const norm = (t) => (t || '').toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      // Nur freistehende Rechenzeichen werden zu Woertern. Ein Bindestrich
+      // MITTEN im Wort ("3D-Cursor", "Auswahl-Menue") bleibt ein Trenner -
+      // sonst haette die Eingabe "-" die halbe Seite getroffen.
+      .replace(/(^|[^a-z0-9])([+\-/*.,])(?![a-z0-9])/g, (m, vor, z) => vor + ' ' + ZEICHEN[z] + ' ')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+
+    const iconFor = (navBtn) => {
+      const svg = navBtn && navBtn.querySelector('.sidebar__item-icon svg');
+      if (!svg) return '';
+      const clone = svg.cloneNode(true);
+      clone.removeAttribute('width');
+      clone.removeAttribute('height');
+      return clone.outerHTML;
+    };
+
+    // ----- Kapitel aus der Seitenleiste -----
+    const kapitel = [];
+    nav.querySelectorAll(':scope > .sidebar__item, :scope > .sidebar__group').forEach((node) => {
+      const istGruppe = node.classList.contains('sidebar__group');
+      const kopf = istGruppe ? node.querySelector(':scope > .sidebar__item') : node;
+      const id = kopf && kopf.dataset.page;
+      if (!id) return;
+      const seite = document.getElementById(id);
+      kapitel.push({
+        id,
+        name: kopf.querySelector('.sidebar__item-label').textContent.trim(),
+        gruppe: (seite && seite.dataset.gruppe) || '',
+        kurz: (seite && seite.dataset.kurz) || '',
+        ikone: iconFor(kopf),
+        unter: Array.from(node.querySelectorAll('.sidebar__sublist .sidebar__item'))
+                    .filter(b => b.dataset.page)
+                    .map(b => ({ id: b.dataset.page, name: b.querySelector('.sidebar__item-label').textContent.trim() })),
+      });
+    });
+    const kapitelZu = (seiteId) => {
+      for (const k of kapitel) {
+        if (k.id === seiteId) return k;
+        if (k.unter.some(u => u.id === seiteId)) return k;
+      }
+      return null;
+    };
+    const seitenName = (seiteId) => {
+      const b = document.querySelector('.sidebar__item[data-page="' + seiteId + '"] .sidebar__item-label');
+      return b ? b.textContent.trim() : seiteId;
+    };
+
+    // ----- Index -----
+    let laufendeId = 0;
+    function sicherId(el){
+      if (!el.id) el.id = 'such-ziel-' + (++laufendeId);
+      return el.id;
+    }
+    // Tasten und Menuepunkte NUR aus dem eigenen Bereich, nicht aus
+    // verschachtelten Unterabschnitten - sonst zaehlt ein Menue alles doppelt.
+    function eigen(el, sel){
+      return Array.from(el.querySelectorAll(sel)).filter(n => n.closest('.substep') === el.closest('.substep'));
+    }
+
+    const index = [];
+    document.querySelectorAll('.page').forEach((seite) => {
+      const k = kapitelZu(seite.id);
+      seite.querySelectorAll(':scope > .step').forEach((step) => {
+        // Auf einigen Seiten steckt die Ueberschrift in einer .step__title-row
+        // (Titel plus Zusatzknopf). Ohne diese zweite Moeglichkeit fehlten
+        // ganze Abschnitte im Index - "Auf ausgewaehlte Achsen beschraenken"
+        // war so gar nicht auffindbar.
+        const titelEl = step.querySelector(':scope > .step__title, :scope > .step__title-row > .step__title');
+        const bauen = (el, titel, art, eltern) => {
+          if (!titel) return;
+          const tasten = [...new Set(eigen(el, '.keycap').map(n => n.textContent.trim()).filter(Boolean))];
+          const tags   = eigen(el, '.ui-tag').map(n => n.textContent.trim());
+          const texte  = eigen(el, '.step__desc, .gif-caption__text, .callout, figcaption').map(n => n.textContent.trim());
+          index.push({
+            ziel: sicherId(el), seite: seite.id,
+            kapitel: k ? k.name : seitenName(seite.id),
+            ikone: k ? k.ikone : '',
+            gruppe: k ? k.gruppe : '',
+            art, titel, eltern: eltern || '',
+            tasten,
+            tastenNorm: tasten.map(norm),
+            // "Numpad +" wird zu "numpad plus" - ohne die einzelnen Woerter
+            // fand die Eingabe "numpad +" nichts, weil sie gegen die ganze
+            // Zeichenkette geprueft wurde.
+            tastenWorte: new Set(tasten.flatMap(t => norm(t).split(' ')).filter(Boolean)),
+            titelWorte: norm(titel).split(' ').filter(Boolean),
+            kapitelWorte: norm((k ? k.name : '') + ' ' + seitenName(seite.id)).split(' ').filter(Boolean),
+            textWorte: norm(texte.join(' ') + ' ' + tags.join(' ')).split(' ').filter(Boolean),
+          });
+        };
+        bauen(step, titelEl && titelEl.textContent.trim(), 'Menü', '');
+        step.querySelectorAll(':scope > .substep').forEach((sub) => {
+          const lbl = sub.querySelector(':scope > .step__label, :scope > .step__title-row > .step__label');
+          if (lbl) bauen(sub, lbl.textContent.trim(), 'Submenü', titelEl ? titelEl.textContent.trim() : '');
+        });
+      });
+    });
+
+    // ----- Bewertung -----
+    // Verglichen wird WORTWEISE, nicht als Zeichenfolge irgendwo im Text. Sonst
+    // trifft ein einzelner Buchstabe ueberall: "strg l" fand vorher auch
+    // Abschnitte, die nur Strg benutzen, weil das "l" in irgendeinem Wort des
+    // Fliesstextes steckte. Ab drei Zeichen zaehlt zusaetzlich der Wortanfang,
+    // damit "achse" auch "Achsen" findet.
+    function trifft(worte, w){
+      for (const x of worte){
+        if (x === w) return true;
+        if (w.length >= 3 && x.startsWith(w)) return true;
+      }
+      return false;
+    }
+
+    // Jedes eingegebene Wort muss irgendwo vorkommen (UND-Verknuepfung).
+    function bewerte(e, worte){
+      let punkte = 0;
+      for (const w of worte){
+        let best = 0;
+        if (e.tastenNorm.includes(w)) best = 10;
+        else if (e.tastenWorte.has(w)) best = 8;
+        else if (w.length >= 2 && e.tastenNorm.some(k => k.startsWith(w))) best = 7;
+        else if (trifft(e.titelWorte, w)) best = 5;
+        else if (trifft(e.kapitelWorte, w)) best = 3;
+        else if (trifft(e.textWorte, w)) best = 1;
+        if (!best) return 0;
+        punkte += best;
+      }
+      // Menues vor Submenues, wenn die Punkte sonst gleich sind
+      return punkte + (e.art === 'Menü' ? 0.5 : 0);
+    }
+
+    // ----- Darstellung -----
+    function leer(){ while (grid.firstChild) grid.removeChild(grid.firstChild); }
+
+    function kachel(inhalt){
+      const t = document.createElement('div');
+      t.className = 'tile';
+      const main = document.createElement('button');
+      main.type = 'button';
+      main.className = 'tile__main';
+      main.innerHTML = inhalt;
+      t.appendChild(main);
+      return { tile: t, main };
+    }
+
+    // Der Ruhezustand zeigt keine Kapitel mehr, sondern erklaert, was die Suche
+    // kann - inklusive anklickbarer Beispiele, weil "man kann auch nach Tasten
+    // suchen" als Satz weniger ueberzeugt als ein Klick auf "Strg L".
+    const BEISPIELE = ['Strg L', 'Crease', 'Achse', 'Numpad +'];
+
+    function zeigeHinweis(){
+      leer();
+      status.textContent = '';
+      const box = document.createElement('div');
+      box.className = 'such-hinweis';
+      const p = document.createElement('p');
+      p.textContent = 'Durchsucht Kapitel, Abschnitte und die Tastenkürzel selbst.';
+      box.appendChild(p);
+      const reihe = document.createElement('div');
+      reihe.className = 'such-hinweis__beispiele';
+      BEISPIELE.forEach((b) => {
+        const knopf = document.createElement('button');
+        knopf.type = 'button';
+        knopf.className = 'such-beispiel';
+        knopf.textContent = b;
+        knopf.addEventListener('click', () => {
+          feld.value = b;
+          feld.focus({ preventScroll: true });
+          zeigeTreffer(b);
+        });
+        reihe.appendChild(knopf);
+      });
+      box.appendChild(reihe);
+      grid.appendChild(box);
+      staffeln();
+    }
+
+    function zeigeTreffer(q){
+      const worte = norm(q).split(' ').filter(Boolean);
+      const treffer = index
+        .map(e => ({ e, p: bewerte(e, worte) }))
+        .filter(x => x.p > 0)
+        .sort((a, b) => b.p - a.p)
+        .slice(0, 24);
+
+      leer();
+      if (!treffer.length){
+        status.textContent = 'Keine Treffer für „' + q.trim() + '“.';
+        return;
+      }
+      status.textContent = treffer.length + (treffer.length === 1 ? ' Treffer' : ' Treffer');
+      treffer.forEach(({ e }) => {
+        const { tile, main } = kachel(
+          '<span class="tile__icon" aria-hidden="true">' + e.ikone + '</span>' +
+          '<span class="tile__badge"></span>' +
+          '<span class="tile__title"></span>' +
+          '<span class="tile__desc"></span>' +
+          '<span class="tile__keys"></span>');
+        main.querySelector('.tile__badge').textContent = e.kapitel;
+        main.querySelector('.tile__title').textContent = e.titel;
+        main.querySelector('.tile__desc').textContent =
+          e.art === 'Submenü' ? 'in ' + e.eltern : '';
+        const keys = main.querySelector('.tile__keys');
+        // Nur die Tasten zeigen, die den Treffer erklaeren - sonst wird die
+        // Kachel zur Tastenwand.
+        e.tasten.filter(t => worte.some(w => norm(t).startsWith(w) || norm(t).split(' ').includes(w))).slice(0, 6)
+          .forEach((t) => {
+            const k = document.createElement('span');
+            k.className = 'keycap';
+            if (t.length > 1) k.style.cssText = 'width:auto; padding:0 8px;';
+            k.textContent = t;
+            keys.appendChild(k);
+          });
+        main.dataset.seite = e.seite;
+        main.dataset.ziel = e.ziel;
+        grid.appendChild(tile);
+      });
+      staffeln();
+    }
+
+    // Setzt NUR die Startverzoegerungen. Das Sichtbarmachen des Overlays hing
+    // frueher mit drin - und wurde damit uebersprungen, sobald eine Suche ohne
+    // Treffer vorzeitig ausstieg. Wer dann mit einer erfolglosen Eingabe im
+    // Feld erneut oeffnete, sah nichts: das Overlay war zwar da, aber
+    // durchsichtig und ohne Mausannahme.
+    function staffeln(){
+      const schritt = REDUCED_MOTION.matches ? 0 : 26;
+      Array.from(grid.children).forEach((t, i) => { t.style.transitionDelay = (i * schritt) + 'ms'; });
+    }
+
+    // ----- Oeffnen und Schliessen -----
+    // Der Zustand steht in einer eigenen Variablen und NICHT in overlay.hidden:
+    // hidden wird erst 240ms nach dem Schliessen gesetzt (solange laeuft das
+    // Ausblenden). Wer in diesem Fenster erneut auf "Suchen" klickt, traf
+    // vorher auf hidden === false - der Knopf hielt die Suche also noch fuer
+    // offen und schloss sie ein zweites Mal, statt sie zu oeffnen. Genau das
+    // war der Fehler "es passiert nichts".
+    let offen = false;
+
+    function auf(){
+      if (offen) return;
+      offen = true;
+      clearTimeout(overlay._hideTimer);
+      overlay.hidden = false;
+      void overlay.offsetHeight; // sonst faengt die Einblendung nicht an
+      if (feld.value.trim()) zeigeTreffer(feld.value); else zeigeHinweis();
+      requestAnimationFrame(() => overlay.classList.add('open'));
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      feld.focus({ preventScroll: true });
+      feld.select();
+    }
+
+    function zu(){
+      if (!offen) return;
+      offen = false;
+      overlay.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      clearTimeout(overlay._hideTimer);
+      overlay._hideTimer = setTimeout(() => { overlay.hidden = true; }, 240);
+    }
+
+    // Der Knopf oeffnet nur - geschlossen wird ueber X, Esc oder Klick daneben.
+    // Solange die Suche offen ist, liegt das Overlay ohnehin ueber dem Knopf.
+    toggle.addEventListener('click', auf);
+    if (closeBtn) closeBtn.addEventListener('click', () => { zu(); toggle.focus({ preventScroll: true }); });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) zu(); });
+
+    let tippTimer = null;
+    feld.addEventListener('input', () => {
+      clearTimeout(tippTimer);
+      tippTimer = setTimeout(() => {
+        const q = feld.value;
+        if (q.trim()) zeigeTreffer(q); else zeigeHinweis();
+      }, 90);
+    });
+
+    feld.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){
+        const erste = grid.querySelector('.tile__main');
+        if (erste) erste.click();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && offen){
+        zu();
+        toggle.focus({ preventScroll: true });
+      }
+    });
+
+    // ----- Sprung -----
+    function springe(seiteId, zielId){
+      const navBtn = document.querySelector('.sidebar__item[data-page="' + seiteId + '"]');
+      if (navBtn) navBtn.click();
+      if (!zielId) return;
+      // Erst im naechsten Bild springen: die Zielseite ist bis dahin display:none
+      requestAnimationFrame(() => {
+        const el = document.getElementById(zielId);
+        if (!el) return;
+        const marke = el.querySelector(':scope > .step-divider, :scope > .substep-marker') || el;
+        setTimeout(() => marke.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      });
+    }
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-seite]');
+      if (!btn || !grid.contains(btn)) return;
+      zu();
+      springe(btn.dataset.seite, btn.dataset.ziel);
+      toggle.focus({ preventScroll: true });
+    });
+
+  })();
+
+
+  // ---------- Sprungpunkte am rechten Rand ----------
+  // Ein Punkt je Abschnitt der gerade angezeigten Seite. Welcher Punkt leuchtet,
+  // entscheidet die Scrollposition - dafuer beobachtet ein IntersectionObserver
+  // ein schmales Band in der Bildschirmmitte (-40% oben, -55% unten). Ein
+  // Abschnitt gilt als "der aktuelle", sobald er dieses Band beruehrt; das ist
+  // stabiler als eine Messung am oberen Rand, wo bei langen GIF-Bloecken lange
+  // gar nichts wechseln wuerde.
+  (function initSectionDots(){
+    const bar = document.querySelector('.section-dots');
+    if (!bar) return;
+    let obs = null;
+
+    function build(){
+      if (obs) { obs.disconnect(); obs = null; }
+      bar.innerHTML = '';
+      const page = document.querySelector('.page.active');
+      let steps = page ? Array.from(page.querySelectorAll(':scope > .step')) : [];
+
+      // Besteht eine Seite aus einem einzigen Abschnitt, greifen wir eine Ebene
+      // tiefer und nehmen dessen Unterabschnitte - aber nur, wenn jeder von
+      // ihnen eine Beschriftung hat. Sonst haetten die Punkte keinen Namen und
+      // waeren nur noch Dekoration.
+      if (steps.length === 1) {
+        const subs = Array.from(steps[0].querySelectorAll(':scope > .substep'));
+        if (subs.length > 1 && subs.every(sub => sub.querySelector(':scope > .step__label'))) steps = subs;
+      }
+
+      // Bei einem einzigen Abschnitt gaebe es nichts zu unterscheiden.
+      if (steps.length < 2) { bar.hidden = true; return; }
+      bar.hidden = false;
+
+      steps.forEach((step, i) => {
+        const titleEl = step.querySelector(':scope > .step__title') || step.querySelector(':scope > .step__label');
+        const name = titleEl ? titleEl.textContent.trim() : ('Abschnitt ' + (i + 1));
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'section-dots__dot';
+        dot.title = name;
+        dot.setAttribute('aria-label', name);
+        dot.addEventListener('click', () => {
+          step.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActive(i);
+        });
+        bar.appendChild(dot);
+      });
+
+      const dots = Array.from(bar.children);
+      function setActive(idx){
+        dots.forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+          d.setAttribute('aria-current', i === idx ? 'true' : 'false');
+        });
+      }
+      setActive(0);
+
+      if ('IntersectionObserver' in window) {
+        obs = new IntersectionObserver((entries) => {
+          entries.forEach((en) => {
+            if (!en.isIntersecting) return;
+            const idx = steps.indexOf(en.target);
+            if (idx !== -1) setActive(idx);
+          });
+        }, { rootMargin: '-40% 0px -55% 0px' });
+        steps.forEach((st) => obs.observe(st));
+      }
+    }
+
+    // Der Seitenwechsel laeuft immer ueber einen Knopf der Seitenleiste - auch
+    // Kacheln, Wischen und Mausrad enden dort. Ein Aufbau nach dem naechsten
+    // Bild reicht deshalb aus, um die neue Seite zu erwischen.
+    document.querySelectorAll('.sidebar__item').forEach((b) => {
+      b.addEventListener('click', () => requestAnimationFrame(build));
+    });
+    build();
+  })();
+
+
+  // ---------- Zurueck nach oben ----------
+  // Erscheint erst, wenn wirklich etwas zu scrollen war - vorher waere er nur
+  // ein Knopf ohne Aufgabe. Die Schwelle liegt bei einer knappen Bildschirmhoehe.
+  (function initToTop(){
+    const btn = document.querySelector('.to-top');
+    if (!btn) return;
+
+    let ticking = false;
+    function update(){
+      ticking = false;
+      btn.classList.toggle('visible', window.scrollY > window.innerHeight * 0.8);
+    }
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }, { passive: true });
+
+    btn.addEventListener('click', () => {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    });
+
+    update();
+  })();
 </script>
 
 <div class="lightbox-overlay" id="lightbox-overlay">
-  <img decoding="async" id="lightbox-img" src="" alt="">
+  <img decoding="async" loading="lazy" id="lightbox-img" src="" alt="">
 </div>
 
 <script>
