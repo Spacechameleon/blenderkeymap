@@ -5681,17 +5681,22 @@
       // nach dem Tausch muessen beide neu aufgebaut werden.
       if (typeof window.__sucheNeuAufbauen === 'function') window.__sucheNeuAufbauen();
       if (typeof window.__punkteNeuAufbauen === 'function') window.__punkteNeuAufbauen();
+      try { localStorage.setItem('bkm-sprache', sprache); } catch (e) {}
     }
 
     btn.addEventListener('click', function(){
       setze(document.documentElement.lang === 'en' ? 'de' : 'en');
     });
 
-    // Die Seite startet bewusst IMMER auf Deutsch. Eine frueher gespeicherte
-    // Wahl wird nicht wiederhergestellt: der Kurs ist deutschsprachig, und ein
-    // Rechner, an dem einmal auf EN gestellt wurde, soll beim naechsten
-    // Aufrufen nicht englisch begruessen. Der Wechsel gilt also nur, solange
-    // die Seite offen ist.
+    // Die Seite oeffnet in der zuletzt gewaehlten Sprache. Der Speicher haengt
+    // an der Adresse UND am Browserprofil des Geraets - eine andere Adresse
+    // (anderer Port, file:// statt http://) oder ein anderer Browser hat einen
+    // eigenen, leeren Speicher. Deutsch ist deshalb immer der Rueckfallwert:
+    // steht nichts drin oder ist der Speicher gesperrt (privates Fenster,
+    // blockierte Website-Daten im eingebetteten Moodle-Rahmen), bleibt es bei
+    // DE. Deswegen das try/catch - in einigen Browsern wirft schon der ZUGRIFF
+    // auf localStorage, nicht erst das Schreiben.
+    try { if (localStorage.getItem('bkm-sprache') === 'en') setze('en'); } catch (e) {}
   })();
 </script>
 
